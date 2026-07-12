@@ -2,15 +2,25 @@
 #include "../rules/piece_rules.hpp"
 #include <sstream>
 
+namespace {
+    std::string trim(const std::string& text) {
+        size_t start = text.find_first_not_of(" \t\r");
+        if (start == std::string::npos) {
+            return "";
+        }
+        size_t end = text.find_last_not_of(" \t\r");
+        return text.substr(start, end - start + 1);
+    }
+}
+
 std::vector<std::vector<std::string>> BoardParser::readBoardSection(std::istream& input, std::vector<std::string>& commands) {
     std::vector<std::vector<std::string>> rawRows;
     std::string line;
     bool inCommandsSection = false;
 
     while (std::getline(input, line)) {
-        if (!line.empty() && line.back() == '\r') {
-            line.pop_back();
-        }
+        line = trim(line);
+
         if (line == "Board:") {
             continue;
         }

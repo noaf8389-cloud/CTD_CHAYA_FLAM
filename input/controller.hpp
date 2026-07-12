@@ -1,6 +1,7 @@
 // input/controller.hpp
 #pragma once
 #include "../model/game_state.hpp"
+#include "../rules/rules_engine.hpp"
 
 class Controller {
 public:

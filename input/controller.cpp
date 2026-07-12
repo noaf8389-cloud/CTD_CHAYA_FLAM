@@ -34,6 +34,10 @@ void Controller::handleClickWithSelection(const Position& clicked, const Positio
         return;
     }
 
+    if (!RulesEngine::isLegalMove(selected, clicked, board)) {
+        return;
+    }
+
     gameState.requestMove(selected, clicked, /* duration */ 0);
     gameState.clearSelection();
 }

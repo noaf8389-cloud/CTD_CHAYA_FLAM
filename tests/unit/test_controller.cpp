@@ -83,3 +83,88 @@ TEST_CASE("clicking outside the board while a piece is selected keeps the select
     Controller::handleClick(500, 500, gameState);
     REQUIRE(gameState.getSelectedPosition().value() == Position{0, 0});
 }
+
+TEST_CASE("clicking an illegal target while a rook is selected is ignored and keeps selection") {
+    Board board(4, 4);
+    board.setCell(0, 0, "wR");
+    GameState gameState(board);
+
+    Controller::handleClick(50, 50, gameState);
+    Controller::handleClick(350, 350, gameState);
+
+    REQUIRE(gameState.getSelectedPosition().value() == Position{0, 0});
+
+    gameState.advanceTime(100000);
+    REQUIRE(gameState.extractCompletedMoves().empty());
+}
+
+TEST_CASE("clicking a legal target while a rook is selected sends a move request and clears selection") {
+    Board board(4, 4);
+    board.setCell(0, 0, "wR");
+    GameState gameState(board);
+
+    Controller::handleClick(50, 50, gameState);
+    Controller::handleClick(350, 50, gameState);
+
+    REQUIRE(gameState.getSelectedPosition().has_value() == false);
+
+    gameState.advanceTime(100000);
+    REQUIRE(gameState.extractCompletedMoves().size() == 1);
+}
+
+TEST_CASE("clicking to capture with an illegal shape is ignored") {
+    Board board(4, 4);
+    board.setCell(0, 0, "wR");
+    board.setCell(1, 1, "bK");
+    GameState gameState(board);
+
+    Controller::handleClick(50, 50, gameState);
+    Controller::handleClick(150, 150, gameState);
+
+    REQUIRE(gameState.getSelectedPosition().value() == Position{0, 0});
+
+    gameState.advanceTime(100000);
+    REQUIRE(gameState.extractCompletedMoves().empty());
+}
+
+TEST_CASE("clicking to capture with a legal shape sends a move request") {
+    Board board(4, 4);
+    board.setCell(0, 0, "wR");
+    board.setCell(0, 3, "bK");
+    GameState gameState(board);
+
+    Controller::handleClick(50, 50, gameState);
+    Controller::handleClick(350, 50, gameState);
+
+    REQUIRE(gameState.getSelectedPosition().has_value() == false);
+
+    gameState.advanceTime(100000);
+    auto completed = gameState.extractCompletedMoves();
+    REQUIRE(completed.size() == 1);
+    REQUIRE(completed[0].to == Position{0, 3});
+}
+
+TEST_CASE("clicking a legal knight move through the controller sends a move request") {
+    Board board(4, 4);
+    board.setCell(0, 0, "wN");
+    GameState gameState(board);
+
+    Controller::handleClick(50, 50, gameState);
+    Controller::handleClick(250, 150, gameState);
+
+    REQUIRE(gameState.getSelectedPosition().has_value() == false);
+
+    gameState.advanceTime(100000);
+    REQUIRE(gameState.extractCompletedMoves().size() == 1);
+}
+
+TEST_CASE("clicking an illegal knight move through the controller is ignored") {
+    Board board(4, 4);
+    board.setCell(0, 0, "wN");
+    GameState gameState(board);
+
+    Controller::handleClick(50, 50, gameState);
+    Controller::handleClick(150, 50, gameState);
+
+    REQUIRE(gameState.getSelectedPosition().value() == Position{0, 0});
+}
