@@ -38,3 +38,24 @@ TEST_CASE("lowercase piece letter is invalid") {
 TEST_CASE("uppercase color letter is invalid") {
     REQUIRE(PieceRules::isValidToken("WK") == false);
 }
+
+TEST_CASE("same color pieces are recognized as same color") {
+    REQUIRE(PieceRules::isSameColor("wK", "wQ") == true);
+    REQUIRE(PieceRules::isSameColor("bK", "bR") == true);
+}
+
+TEST_CASE("different color pieces are not same color") {
+    REQUIRE(PieceRules::isSameColor("wK", "bQ") == false);
+}
+
+TEST_CASE("empty cell is never the same color as anything") {
+    REQUIRE(PieceRules::isSameColor(".", "wK") == false);
+    REQUIRE(PieceRules::isSameColor("wK", ".") == false);
+    REQUIRE(PieceRules::isSameColor(".", ".") == false);
+}
+
+TEST_CASE("isColor matches the token color correctly") {
+    REQUIRE(PieceRules::isColor("wK", 'w') == true);
+    REQUIRE(PieceRules::isColor("wK", 'b') == false);
+    REQUIRE(PieceRules::isColor(".", 'w') == false);
+}

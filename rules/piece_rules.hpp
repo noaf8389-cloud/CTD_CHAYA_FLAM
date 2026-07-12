@@ -4,6 +4,8 @@
 class PieceRules {
 public:
     static bool isValidToken(const std::string& token);
+    static bool isSameColor(const std::string& token1, const std::string& token2);
+    static bool isColor(const std::string& token, char color);
 
 private:
     static const std::string VALID_COLORS;

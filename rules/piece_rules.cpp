@@ -15,3 +15,17 @@ bool PieceRules::isValidToken(const std::string& token) {
     bool validPiece = VALID_PIECE_TYPES.find(token[1]) != std::string::npos;
     return validColor && validPiece;
 }
+
+bool PieceRules::isSameColor(const std::string& token1, const std::string& token2) {
+    if (token1 == Board::EMPTY_CELL || token2 == Board::EMPTY_CELL) {
+        return false;
+    }
+    return token1[0] == token2[0];
+}
+
+bool PieceRules::isColor(const std::string& token, char color) {
+    if (token == Board::EMPTY_CELL) {
+        return false;
+    }
+    return token[0] == color;
+}

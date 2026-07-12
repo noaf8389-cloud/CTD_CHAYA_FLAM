@@ -2,7 +2,8 @@
 
 #include <iostream>
 #include "io/board_parser.hpp"
-#include "io/board_print.hpp"
+#include "model/game_state.hpp"
+#include "engine/game_engine.hpp"
 
 int main() {
     Board board(0, 0);
@@ -19,11 +20,8 @@ int main() {
         return 0;
     }
 
-    for (const std::string& command : commands) {
-        if (command == "print board") {
-            BoardPrinter::print(board, std::cout);
-        }
-    }
+    GameState gameState(board);
+    GameEngine::run(gameState, commands);
 
     return 0;
 }
