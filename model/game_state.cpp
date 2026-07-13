@@ -1,7 +1,7 @@
 #include "game_state.hpp"
 
 void GameState::requestMove(const Position& from, const Position& to) {
-    if (hasPendingMove(from)) {
+    if (!pendingMoves_.empty()) {
         return;
     }
     int rowDiff = std::abs(from.row - to.row);

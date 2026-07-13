@@ -76,17 +76,6 @@ TEST_CASE("cancelPendingMove removes a move without completing it") {
     REQUIRE(gameState.extractCompletedMoves().empty());
 }
 
-TEST_CASE("only matured moves are extracted while others remain pending") {
-    Board board(5, 5);
-    GameState gameState(board);
-    gameState.requestMove(Position{0, 0}, Position{0, 1});   // מרחק 1 -> 1000ms
-    gameState.requestMove(Position{1, 0}, Position{1, 3});   // מרחק 3 -> 3000ms
-    gameState.advanceTime(1000);
-    auto completed = gameState.extractCompletedMoves();
-    REQUIRE(completed.size() == 1);
-    REQUIRE(completed[0].from == Position{0, 0});
-}
-
 TEST_CASE("move duration is proportional to distance travelled") {
     Board board(5, 5);
     GameState gameState(board);
@@ -105,4 +94,17 @@ TEST_CASE("diagonal move duration uses the larger of row and column distance") {
     REQUIRE(gameState.extractCompletedMoves().empty());
     gameState.advanceTime(1);
     REQUIRE(gameState.extractCompletedMoves().size() == 1);
+}
+
+TEST_CASE("new game state is not over") {
+    Board board(2, 2);
+    GameState gameState(board);
+    REQUIRE(gameState.isGameOver() == false);
+}
+
+TEST_CASE("endGame marks the game as over") {
+    Board board(2, 2);
+    GameState gameState(board);
+    gameState.endGame();
+    REQUIRE(gameState.isGameOver() == true);
 }

@@ -168,3 +168,27 @@ TEST_CASE("clicking an illegal knight move through the controller is ignored") {
 
     REQUIRE(gameState.getSelectedPosition().value() == Position{0, 0});
 }
+
+TEST_CASE("clicking after the game is over is ignored") {
+    Board board(4, 4);
+    board.setCell(0, 0, "wR");
+    GameState gameState(board);
+    gameState.endGame();
+
+    Controller::handleClick(50, 50, gameState);
+
+    REQUIRE(gameState.getSelectedPosition().has_value() == false);
+}
+
+TEST_CASE("clicking after the game is over does not start a new move even on a valid target") {
+    Board board(4, 4);
+    board.setCell(0, 0, "wR");
+    GameState gameState(board);
+    gameState.select(Position{0, 0});
+    gameState.endGame();
+
+    Controller::handleClick(150, 50, gameState);
+
+    REQUIRE(gameState.getSelectedPosition().value() == Position{0, 0});
+    REQUIRE(gameState.hasPendingMove(Position{0, 0}) == false);
+}

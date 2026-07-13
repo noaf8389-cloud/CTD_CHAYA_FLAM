@@ -33,33 +33,6 @@ TEST_CASE("applyCompletedMoves leaves the board untouched before the move mature
     REQUIRE(gameState.getBoard().getCell(1, 1) == ".");
 }
 
-TEST_CASE("applyCompletedMoves handles multiple matured moves in one call") {
-    Board board(2, 2);
-    board.setCell(0, 0, "wK");
-    board.setCell(0, 1, "bQ");
-    GameState gameState(board);
-    gameState.requestMove(Position{0, 0}, Position{1, 0});
-    gameState.requestMove(Position{0, 1}, Position{1, 1});
-    gameState.advanceTime(1000);
-    RealTimeArbiter::applyCompletedMoves(gameState);
-    REQUIRE(gameState.getBoard().getCell(1, 0) == "wK");
-    REQUIRE(gameState.getBoard().getCell(1, 1) == "bQ");
-}
-
-TEST_CASE("applyCompletedMoves only moves the matured piece, leaving the pending one untouched") {
-    Board board(5, 5);
-    board.setCell(0, 0, "wK");
-    board.setCell(0, 4, "bQ");
-    GameState gameState(board);
-    gameState.requestMove(Position{0, 0}, Position{1, 0});   // מרחק 1
-    gameState.requestMove(Position{0, 4}, Position{4, 4});   // מרחק 4
-    gameState.advanceTime(1000);
-    RealTimeArbiter::applyCompletedMoves(gameState);
-    REQUIRE(gameState.getBoard().getCell(1, 0) == "wK");
-    REQUIRE(gameState.getBoard().getCell(0, 4) == "bQ");
-    REQUIRE(gameState.getBoard().getCell(4, 4) == ".");
-}
-
 TEST_CASE("applying a move whose source is already empty does not erase the destination") {
     Board board(2, 2);
     board.setCell(1, 1, "wK");
@@ -68,4 +41,31 @@ TEST_CASE("applying a move whose source is already empty does not erase the dest
     gameState.advanceTime(1000);
     RealTimeArbiter::applyCompletedMoves(gameState);
     REQUIRE(gameState.getBoard().getCell(1, 1) == "wK");
+}
+
+TEST_CASE("applyCompletedMoves ends the game when a king is captured") {
+    Board board(2, 2);
+    board.setCell(0, 0, "wR");
+    board.setCell(0, 1, "bK");
+    GameState gameState(board);
+
+    gameState.requestMove(Position{0, 0}, Position{0, 1});
+    gameState.advanceTime(1000);
+    RealTimeArbiter::applyCompletedMoves(gameState);
+
+    REQUIRE(gameState.isGameOver() == true);
+    REQUIRE(gameState.getBoard().getCell(0, 1) == "wR");
+}
+
+TEST_CASE("applyCompletedMoves does not end the game when capturing a non-king piece") {
+    Board board(2, 2);
+    board.setCell(0, 0, "wR");
+    board.setCell(0, 1, "bQ");
+    GameState gameState(board);
+
+    gameState.requestMove(Position{0, 0}, Position{0, 1});
+    gameState.advanceTime(1000);
+    RealTimeArbiter::applyCompletedMoves(gameState);
+
+    REQUIRE(gameState.isGameOver() == false);
 }

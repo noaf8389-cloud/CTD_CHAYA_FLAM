@@ -29,10 +29,14 @@ public:
     void cancelPendingMove(const Position& from);
     std::vector<Motion> extractCompletedMoves();
 
+    bool isGameOver() const { return gameOver_; }
+    void endGame() { gameOver_ = true; }
+
 private:
     Board board_;
     std::optional<Position> selectedPosition_;
     long long currentTime_ = 0;
     std::vector<Motion> pendingMoves_;
     char playerColor_ = DEFAULT_PLAYER_COLOR;
+    bool gameOver_ = false;
 };

@@ -48,10 +48,10 @@ TEST_CASE("clicking_another_piece_replaces_selection") {
     REQUIRE(output == "wR . .\n. . wK\n");
 }
 
-TEST_CASE("two pieces can have pending moves at the same time") {
+TEST_CASE("a second piece cannot move while another piece is already moving") {
     std::string output = runScenario(
-        "Board:\nwK . wQ\n. . .\n. . .\nCommands:\nclick 50 50\nclick 50 150\nclick 250 50\nclick 250 150\nwait 1000\nprint board\n");
-    REQUIRE(output == ". . .\nwK . wQ\n. . .\n");
+        "Board:\nwR . .\n. . .\nbR . .\nCommands:\nclick 50 50\nclick 250 50\nclick 50 250\nclick 250 250\nwait 2000\nprint board\n");
+    REQUIRE(output == ". . wR\n. . .\nbR . .\n");
 }
 
 TEST_CASE("malformed wait command without a number is ignored") {
@@ -90,4 +90,28 @@ TEST_CASE("two cell move shows original position before arrival and destination 
     std::string output = runScenario(
         "Board:\nwR . .\nCommands:\nclick 50 50\nclick 250 50\nwait 1000\nprint board\nwait 1000\nprint board\n");
     REQUIRE(output == "wR . .\n. . wR\n");
+}
+
+TEST_CASE("attempting to redirect a piece already in motion does not change its destination") {
+    std::string output = runScenario(
+        "Board:\nwR . . .\n. . . .\n. . . .\n. . . .\nCommands:\nclick 50 50\nclick 350 50\nclick 50 50\nclick 50 350\nwait 3000\nprint board\n");
+    REQUIRE(output == ". . . wR\n. . . .\n. . . .\n. . . .\n");
+}
+
+TEST_CASE("a piece can move again immediately after arriving with no cooldown") {
+    std::string output = runScenario(
+        "Board:\nwR . . .\n. . . .\n. . . .\n. . . .\nCommands:\nclick 50 50\nclick 150 50\nwait 1000\nclick 150 50\nclick 350 50\nwait 2000\nprint board\n");
+    REQUIRE(output == ". . . wR\n. . . .\n. . . .\n. . . .\n");
+}
+
+TEST_CASE("capturing the enemy king ends the game") {
+    std::string output = runScenario(
+        "Board:\nwR . bK\nCommands:\nclick 50 50\nclick 250 50\nwait 2000\nprint board\n");
+    REQUIRE(output == ". . wR\n");
+}
+
+TEST_CASE("move commands after the game ends are ignored but wait and print still work") {
+    std::string output = runScenario(
+        "Board:\nwR . bK\n. . .\n. wQ .\nCommands:\nclick 50 50\nclick 250 50\nwait 2000\nclick 150 250\nclick 250 250\nwait 1000\nprint board\n");
+    REQUIRE(output == ". . wR\n. . .\n. wQ .\n");
 }

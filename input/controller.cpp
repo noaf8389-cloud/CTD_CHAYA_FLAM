@@ -4,6 +4,10 @@
 #include "../rules/piece_rules.hpp"
 
 void Controller::handleClick(int x, int y, GameState& gameState) {
+    if (gameState.isGameOver()) {
+        return;
+    }
+
     const Board& board = gameState.getBoard();
     std::optional<Position> clicked = BoardMapper::toPosition(x, y, board.getRowCount(), board.getColCount());
     if (!clicked.has_value()) {
