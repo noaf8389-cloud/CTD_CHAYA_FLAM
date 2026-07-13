@@ -30,10 +30,10 @@ TEST_CASE("clicking own piece with nothing selected selects it") {
     REQUIRE(gameState.getSelectedPosition().value() == Position{0, 0});
 }
 
-TEST_CASE("clicking opponent piece with nothing selected is ignored") {
+TEST_CASE("clicking any piece with nothing selected selects it regardless of color") {
     GameState gameState(makeBoardWithPieces());
     Controller::handleClick(50, 150, gameState);
-    REQUIRE(gameState.getSelectedPosition().has_value() == false);
+    REQUIRE(gameState.getSelectedPosition().value() == Position{1, 0});
 }
 
 TEST_CASE("clicking the same selected cell again does nothing") {

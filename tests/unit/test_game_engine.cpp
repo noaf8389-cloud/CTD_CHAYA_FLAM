@@ -73,3 +73,21 @@ TEST_CASE("print board can be called multiple times") {
     std::string output = runScenario("Board:\nwK\nCommands:\nprint board\nprint board\n");
     REQUIRE(output == "wK\nwK\n");
 }
+
+TEST_CASE("a legal move through the full engine updates the board") {
+    std::string output = runScenario(
+        "Board:\nwR . . .\n. . . .\n. . . .\n. . . .\nCommands:\nclick 50 50\nclick 350 50\nwait 3000\nprint board\n");
+    REQUIRE(output == ". . . wR\n. . . .\n. . . .\n. . . .\n");
+}
+
+TEST_CASE("one cell move is not complete before its full duration has passed") {
+    std::string output = runScenario(
+        "Board:\nwR . .\nCommands:\nclick 50 50\nclick 150 50\nwait 500\nprint board\n");
+    REQUIRE(output == "wR . .\n");
+}
+
+TEST_CASE("two cell move shows original position before arrival and destination after") {
+    std::string output = runScenario(
+        "Board:\nwR . .\nCommands:\nclick 50 50\nclick 250 50\nwait 1000\nprint board\nwait 1000\nprint board\n");
+    REQUIRE(output == "wR . .\n. . wR\n");
+}

@@ -38,7 +38,7 @@ void Controller::handleClickWithSelection(const Position& clicked, const Positio
         return;
     }
 
-    gameState.requestMove(selected, clicked, /* duration */ 0);
+    gameState.requestMove(selected, clicked);
     gameState.clearSelection();
 }
 
@@ -46,7 +46,7 @@ void Controller::handleClickWithNoSelection(const Position& clicked, GameState& 
     const Board& board = gameState.getBoard();
     std::string token = board.getCell(clicked.row, clicked.col);
 
-    if (!PieceRules::isColor(token, gameState.getPlayerColor())) {
+    if (token == Board::EMPTY_CELL) {
         return;
     }
 

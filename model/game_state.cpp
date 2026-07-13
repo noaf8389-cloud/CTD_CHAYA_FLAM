@@ -1,10 +1,13 @@
 #include "game_state.hpp"
 
-void GameState::requestMove(const Position& from, const Position& to, long long durationMs) {
+void GameState::requestMove(const Position& from, const Position& to) {
     if (hasPendingMove(from)) {
         return;
     }
-    pendingMoves_.push_back(Motion{from, to, currentTime_ + durationMs});
+    int rowDiff = std::abs(from.row - to.row);
+    int colDiff = std::abs(from.col - to.col);
+    long long distance = std::max(rowDiff, colDiff);
+    pendingMoves_.push_back(Motion{from, to, currentTime_ + distance * MS_PER_CELL});
 }
 
 void GameState::cancelPendingMove(const Position& from) {

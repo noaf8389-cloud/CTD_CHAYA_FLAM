@@ -18,12 +18,6 @@ TEST_CASE("select then clearSelection roundtrip") {
     REQUIRE(gameState.getSelectedPosition().has_value() == false);
 }
 
-TEST_CASE("default player color is white") {
-    Board board(2, 2);
-    GameState gameState(board);
-    REQUIRE(gameState.getPlayerColor() == 'w');
-}
-
 TEST_CASE("advanceTime accumulates across multiple calls") {
     Board board(2, 2);
     GameState gameState(board);
@@ -37,20 +31,16 @@ TEST_CASE("advanceTime accumulates across multiple calls") {
 TEST_CASE("a pending move is not completed before its time arrives") {
     Board board(2, 2);
     GameState gameState(board);
-
-    gameState.requestMove(Position{0, 0}, Position{1, 1}, 1000);
+    gameState.requestMove(Position{0, 0}, Position{1, 1});
     gameState.advanceTime(500);
-
     REQUIRE(gameState.extractCompletedMoves().empty());
 }
 
 TEST_CASE("a pending move completes once enough time has passed") {
     Board board(2, 2);
     GameState gameState(board);
-
-    gameState.requestMove(Position{0, 0}, Position{1, 1}, 1000);
+    gameState.requestMove(Position{0, 0}, Position{1, 1});
     gameState.advanceTime(1000);
-
     auto completed = gameState.extractCompletedMoves();
     REQUIRE(completed.size() == 1);
     REQUIRE(completed[0].from == Position{0, 0});
@@ -60,22 +50,18 @@ TEST_CASE("a pending move completes once enough time has passed") {
 TEST_CASE("extractCompletedMoves does not return the same move twice") {
     Board board(2, 2);
     GameState gameState(board);
-
-    gameState.requestMove(Position{0, 0}, Position{1, 1}, 1000);
+    gameState.requestMove(Position{0, 0}, Position{1, 1});
     gameState.advanceTime(1000);
     gameState.extractCompletedMoves();
-
     REQUIRE(gameState.extractCompletedMoves().empty());
 }
 
 TEST_CASE("requesting a new move while one is already pending is ignored") {
     Board board(2, 2);
     GameState gameState(board);
-
-    gameState.requestMove(Position{0, 0}, Position{1, 1}, 1000);
-    gameState.requestMove(Position{0, 0}, Position{0, 1}, 1000);
+    gameState.requestMove(Position{0, 0}, Position{1, 1});
+    gameState.requestMove(Position{0, 0}, Position{0, 1});
     gameState.advanceTime(1000);
-
     auto completed = gameState.extractCompletedMoves();
     REQUIRE(completed.size() == 1);
     REQUIRE(completed[0].to == Position{1, 1});
@@ -84,23 +70,39 @@ TEST_CASE("requesting a new move while one is already pending is ignored") {
 TEST_CASE("cancelPendingMove removes a move without completing it") {
     Board board(2, 2);
     GameState gameState(board);
-
-    gameState.requestMove(Position{0, 0}, Position{1, 1}, 1000);
+    gameState.requestMove(Position{0, 0}, Position{1, 1});
     gameState.cancelPendingMove(Position{0, 0});
     gameState.advanceTime(1000);
-
     REQUIRE(gameState.extractCompletedMoves().empty());
 }
 
 TEST_CASE("only matured moves are extracted while others remain pending") {
-    Board board(2, 2);
+    Board board(5, 5);
     GameState gameState(board);
-
-    gameState.requestMove(Position{0, 0}, Position{0, 1}, 100);
-    gameState.requestMove(Position{1, 0}, Position{1, 1}, 1000);
-    gameState.advanceTime(100);
-
+    gameState.requestMove(Position{0, 0}, Position{0, 1});   // מרחק 1 -> 1000ms
+    gameState.requestMove(Position{1, 0}, Position{1, 3});   // מרחק 3 -> 3000ms
+    gameState.advanceTime(1000);
     auto completed = gameState.extractCompletedMoves();
     REQUIRE(completed.size() == 1);
     REQUIRE(completed[0].from == Position{0, 0});
+}
+
+TEST_CASE("move duration is proportional to distance travelled") {
+    Board board(5, 5);
+    GameState gameState(board);
+    gameState.requestMove(Position{0, 0}, Position{0, 3});
+    gameState.advanceTime(2999);
+    REQUIRE(gameState.extractCompletedMoves().empty());
+    gameState.advanceTime(1);
+    REQUIRE(gameState.extractCompletedMoves().size() == 1);
+}
+
+TEST_CASE("diagonal move duration uses the larger of row and column distance") {
+    Board board(5, 5);
+    GameState gameState(board);
+    gameState.requestMove(Position{0, 0}, Position{2, 2});
+    gameState.advanceTime(1999);
+    REQUIRE(gameState.extractCompletedMoves().empty());
+    gameState.advanceTime(1);
+    REQUIRE(gameState.extractCompletedMoves().size() == 1);
 }

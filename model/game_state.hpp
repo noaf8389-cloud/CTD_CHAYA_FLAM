@@ -9,6 +9,8 @@ class GameState {
 public:
     static const inline char DEFAULT_PLAYER_COLOR = 'w';
 
+    static const inline long long MS_PER_CELL = 1000;
+
     explicit GameState(Board board) : board_(std::move(board)) {}
 
     Board& getBoard() { return board_; }
@@ -18,14 +20,12 @@ public:
     void select(const Position& position) { selectedPosition_ = position; }
     void clearSelection() { selectedPosition_ = std::nullopt; }
 
-    char getPlayerColor() const { return playerColor_; }
-
     long long getCurrentTime() const { return currentTime_; }
     void advanceTime(long long ms) { currentTime_ += ms; }
 
     bool hasPendingMove(const Position& from) const;
 
-    void requestMove(const Position& from, const Position& to, long long durationMs);
+    void requestMove(const Position& from, const Position& to);
     void cancelPendingMove(const Position& from);
     std::vector<Motion> extractCompletedMoves();
 
