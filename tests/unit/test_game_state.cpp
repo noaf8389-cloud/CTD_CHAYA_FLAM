@@ -68,7 +68,7 @@ TEST_CASE("extractCompletedMoves does not return the same move twice") {
     REQUIRE(gameState.extractCompletedMoves().empty());
 }
 
-TEST_CASE("requesting a new move from the same source cancels the previous one") {
+TEST_CASE("requesting a new move while one is already pending is ignored") {
     Board board(2, 2);
     GameState gameState(board);
 
@@ -78,7 +78,7 @@ TEST_CASE("requesting a new move from the same source cancels the previous one")
 
     auto completed = gameState.extractCompletedMoves();
     REQUIRE(completed.size() == 1);
-    REQUIRE(completed[0].to == Position{0, 1});
+    REQUIRE(completed[0].to == Position{1, 1});
 }
 
 TEST_CASE("cancelPendingMove removes a move without completing it") {

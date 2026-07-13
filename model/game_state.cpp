@@ -1,7 +1,9 @@
 #include "game_state.hpp"
 
 void GameState::requestMove(const Position& from, const Position& to, long long durationMs) {
-    cancelPendingMove(from);
+    if (hasPendingMove(from)) {
+        return;
+    }
     pendingMoves_.push_back(Motion{from, to, currentTime_ + durationMs});
 }
 
@@ -28,4 +30,13 @@ std::vector<Motion> GameState::extractCompletedMoves() {
 
     pendingMoves_ = stillPending;
     return completed;
+}
+
+bool GameState::hasPendingMove(const Position& from) const {
+    for (const Motion& motion : pendingMoves_) {
+        if (motion.from == from) {
+            return true;
+        }
+    }
+    return false;
 }

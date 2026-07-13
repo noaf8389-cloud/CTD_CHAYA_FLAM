@@ -23,6 +23,8 @@ public:
     long long getCurrentTime() const { return currentTime_; }
     void advanceTime(long long ms) { currentTime_ += ms; }
 
+    bool hasPendingMove(const Position& from) const;
+
     void requestMove(const Position& from, const Position& to, long long durationMs);
     void cancelPendingMove(const Position& from);
     std::vector<Motion> extractCompletedMoves();
