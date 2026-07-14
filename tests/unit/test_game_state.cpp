@@ -108,3 +108,48 @@ TEST_CASE("endGame marks the game as over") {
     gameState.endGame();
     REQUIRE(gameState.isGameOver() == true);
 }
+
+TEST_CASE("startJump makes hasActiveJumpAt true immediately") {
+    Board board(3, 3);
+    GameState gameState(board);
+    gameState.startJump(Position{1, 1});
+    REQUIRE(gameState.hasActiveJumpAt(Position{1, 1}) == true);
+}
+
+TEST_CASE("hasActiveJumpAt is false for a different position") {
+    Board board(3, 3);
+    GameState gameState(board);
+    gameState.startJump(Position{1, 1});
+    REQUIRE(gameState.hasActiveJumpAt(Position{0, 0}) == false);
+}
+
+TEST_CASE("a jump is still active exactly at its expiry time") {
+    Board board(3, 3);
+    GameState gameState(board);
+    gameState.startJump(Position{1, 1});
+    gameState.advanceTime(1000);
+    REQUIRE(gameState.hasActiveJumpAt(Position{1, 1}) == true);
+}
+
+TEST_CASE("a jump is no longer active after its duration has fully elapsed") {
+    Board board(3, 3);
+    GameState gameState(board);
+    gameState.startJump(Position{1, 1});
+    gameState.advanceTime(1001);
+    REQUIRE(gameState.hasActiveJumpAt(Position{1, 1}) == false);
+}
+
+TEST_CASE("clearJumpAt removes an active jump before it expires") {
+    Board board(3, 3);
+    GameState gameState(board);
+    gameState.startJump(Position{1, 1});
+    gameState.clearJumpAt(Position{1, 1});
+    REQUIRE(gameState.hasActiveJumpAt(Position{1, 1}) == false);
+}
+
+TEST_CASE("clearJumpAt on a position with no jump does nothing") {
+    Board board(3, 3);
+    GameState gameState(board);
+    gameState.clearJumpAt(Position{1, 1});
+    REQUIRE(gameState.hasActiveJumpAt(Position{1, 1}) == false);
+}

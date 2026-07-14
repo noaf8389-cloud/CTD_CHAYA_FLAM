@@ -29,8 +29,19 @@ void RealTimeArbiter::applyCompletedMoves(GameState& gameState) {
             continue;
         }
 
-        std::string capturedToken = board.getCell(motion.to.row, motion.to.col);
-        if (capturedToken.size() == 2 && capturedToken[1] == 'K') {
+        std::string destinationToken = board.getCell(motion.to.row, motion.to.col);
+
+        if (gameState.hasActiveJumpAt(motion.to) && !PieceRules::isSameColor(token, destinationToken)) {
+            if (token.size() == 2 && token[1] == 'K') {
+            gameState.endGame();
+            }
+            
+            board.setCell(motion.from.row, motion.from.col, Board::EMPTY_CELL);
+            gameState.clearJumpAt(motion.to);
+            continue;
+        }
+        
+        if (destinationToken.size() == 2 && destinationToken[1] == 'K') {
             gameState.endGame();
         }
 

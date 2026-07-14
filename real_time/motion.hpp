@@ -6,3 +6,8 @@ struct Motion {
     Position to;
     long long completionTime;
 };
+
+struct Jump {
+    Position position;
+    long long endTime;
+};

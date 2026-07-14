@@ -37,6 +37,12 @@ void GameEngine::run(GameState& gameState, const std::vector<std::string>& comma
             continue;
         }
 
+        int jumpX, jumpY;
+        if (tryParseJumpCommand(command, jumpX, jumpY)) {
+            Controller::handleJump(jumpX, jumpY, gameState);
+            continue;
+        }
+
         int x, y;
         if (tryParseClickCommand(command, x, y)) {
             Controller::handleClick(x, y, gameState);
@@ -47,4 +53,12 @@ void GameEngine::run(GameState& gameState, const std::vector<std::string>& comma
             BoardPrinter::print(gameState.getBoard(), std::cout);
         }
     }
+}
+
+bool GameEngine::tryParseJumpCommand(const std::string& command, int& outX, int& outY) {
+    std::istringstream iss;
+    if (!tryExtractKeyword(command, "jump", iss)) {
+        return false;
+    }
+    return static_cast<bool>(iss >> outX >> outY);
 }

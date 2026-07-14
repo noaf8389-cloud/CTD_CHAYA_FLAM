@@ -6,6 +6,7 @@
 class Controller {
 public:
     static void handleClick(int x, int y, GameState& gameState);
+    static void handleJump(int x, int y, GameState& gameState);
 
 private:
     static void handleClickWithNoSelection(const Position& clicked, GameState& gameState);

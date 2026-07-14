@@ -56,3 +56,26 @@ void Controller::handleClickWithNoSelection(const Position& clicked, GameState& 
 
     gameState.select(clicked);
 }
+
+void Controller::handleJump(int x, int y, GameState& gameState) {
+    if (gameState.isGameOver()) {
+        return;
+    }
+
+    const Board& board = gameState.getBoard();
+    std::optional<Position> position = BoardMapper::toPosition(x, y, board.getRowCount(), board.getColCount());
+    if (!position.has_value()) {
+        return;
+    }
+
+    std::string token = board.getCell(position->row, position->col);
+    if (token == Board::EMPTY_CELL) {
+        return;
+    }
+
+    if (gameState.hasPendingMove(position.value())) {
+        return;
+    }
+
+    gameState.startJump(position.value());
+}

@@ -119,7 +119,7 @@ TEST_CASE("applyCompletedMoves does not promote a non-pawn piece reaching the la
 }
 
 TEST_CASE("a pawn moving two cells directly onto the promotion row still promotes to queen") {
-    Board board(3, 4);
+    Board board(4, 4);
     board.setCell(2, 0, "wP");
     GameState gameState(board);
 
@@ -141,4 +141,77 @@ TEST_CASE("a pawn capturing diagonally into the promotion row promotes to queen"
     RealTimeArbiter::applyCompletedMoves(gameState);
 
     REQUIRE(gameState.getBoard().getCell(0, 1) == "wQ");
+}
+
+TEST_CASE("applyCompletedMoves lets an airborne piece capture an arriving enemy") {
+    Board board(3, 3);
+    board.setCell(1, 0, "wK");
+    board.setCell(1, 1, "bR");
+    GameState gameState(board);
+
+    gameState.startJump(Position{1, 0});
+    gameState.requestMove(Position{1, 1}, Position{1, 0});
+    gameState.advanceTime(1000);
+    RealTimeArbiter::applyCompletedMoves(gameState);
+
+    REQUIRE(gameState.getBoard().getCell(1, 0) == "wK");
+    REQUIRE(gameState.getBoard().getCell(1, 1) == ".");
+}
+
+TEST_CASE("applyCompletedMoves ends the game when a jump captures an arriving enemy king") {
+    Board board(3, 3);
+    board.setCell(1, 0, "wR");
+    board.setCell(1, 1, "bK");
+    GameState gameState(board);
+
+    gameState.startJump(Position{1, 0});
+    gameState.requestMove(Position{1, 1}, Position{1, 0});
+    gameState.advanceTime(1000);
+    RealTimeArbiter::applyCompletedMoves(gameState);
+
+    REQUIRE(gameState.isGameOver() == true);
+    REQUIRE(gameState.getBoard().getCell(1, 0) == "wR");
+}
+
+TEST_CASE("applyCompletedMoves applies a normal capture once the jump has already expired") {
+    Board board(1, 4);
+    board.setCell(0, 0, "wK");
+    board.setCell(0, 3, "bR");
+    GameState gameState(board);
+
+    gameState.startJump(Position{0, 0});
+    gameState.advanceTime(1000);
+    RealTimeArbiter::applyCompletedMoves(gameState);
+
+    gameState.requestMove(Position{0, 3}, Position{0, 0});
+    gameState.advanceTime(3000);
+    RealTimeArbiter::applyCompletedMoves(gameState);
+
+    REQUIRE(gameState.getBoard().getCell(0, 0) == "bR");
+}
+
+TEST_CASE("applyCompletedMoves leaves the board unchanged when no enemy arrives during a jump") {
+    Board board(3, 3);
+    board.setCell(1, 1, "wK");
+    GameState gameState(board);
+
+    gameState.startJump(Position{1, 1});
+    gameState.advanceTime(1000);
+    RealTimeArbiter::applyCompletedMoves(gameState);
+
+    REQUIRE(gameState.getBoard().getCell(1, 1) == "wK");
+}
+
+TEST_CASE("applyCompletedMoves does not let a jump capture a friendly arriving piece") {
+    Board board(1, 3);
+    board.setCell(0, 0, "wK");
+    board.setCell(0, 2, "wR");
+    GameState gameState(board);
+
+    gameState.startJump(Position{0, 0});
+    gameState.requestMove(Position{0, 2}, Position{0, 0});
+    gameState.advanceTime(2000);
+    RealTimeArbiter::applyCompletedMoves(gameState);
+
+    REQUIRE(gameState.getBoard().getCell(0, 0) == "wR");
 }

@@ -192,3 +192,46 @@ TEST_CASE("clicking after the game is over does not start a new move even on a v
     REQUIRE(gameState.getSelectedPosition().value() == Position{0, 0});
     REQUIRE(gameState.hasPendingMove(Position{0, 0}) == false);
 }
+
+TEST_CASE("jumping on an empty cell does nothing") {
+    Board board(3, 3);
+    GameState gameState(board);
+    Controller::handleJump(150, 150, gameState);
+    REQUIRE(gameState.hasActiveJumpAt(Position{1, 1}) == false);
+}
+
+TEST_CASE("jumping on a stationary piece starts a jump") {
+    Board board(3, 3);
+    board.setCell(1, 1, "wK");
+    GameState gameState(board);
+    Controller::handleJump(150, 150, gameState);
+    REQUIRE(gameState.hasActiveJumpAt(Position{1, 1}) == true);
+}
+
+TEST_CASE("jumping on a piece that is already moving is ignored") {
+    Board board(1, 4);
+    board.setCell(0, 0, "wR");
+    GameState gameState(board);
+    gameState.requestMove(Position{0, 0}, Position{0, 3});
+
+    Controller::handleJump(50, 50, gameState);
+
+    REQUIRE(gameState.hasActiveJumpAt(Position{0, 0}) == false);
+}
+
+TEST_CASE("jumping outside the board does nothing") {
+    Board board(3, 3);
+    board.setCell(1, 1, "wK");
+    GameState gameState(board);
+    Controller::handleJump(500, 500, gameState);
+    REQUIRE(gameState.hasActiveJumpAt(Position{1, 1}) == false);
+}
+
+TEST_CASE("jumping after the game is over is ignored") {
+    Board board(3, 3);
+    board.setCell(1, 1, "wK");
+    GameState gameState(board);
+    gameState.endGame();
+    Controller::handleJump(150, 150, gameState);
+    REQUIRE(gameState.hasActiveJumpAt(Position{1, 1}) == false);
+}

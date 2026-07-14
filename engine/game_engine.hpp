@@ -6,6 +6,7 @@
 class GameEngine {
 public:
     static void run(GameState& gameState, const std::vector<std::string>& commands);
+    static bool tryParseJumpCommand(const std::string& command, int& outX, int& outY);
 
 private:
     static bool tryExtractKeyword(const std::string& command, const std::string& expectedKeyword, std::istringstream& stream);

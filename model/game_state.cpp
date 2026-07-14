@@ -1,5 +1,23 @@
 #include "game_state.hpp"
 
+bool GameState::hasActiveJumpAt(const Position& position) const {
+    for (const Jump& jump : jumps_) {
+        if (jump.position == position && jump.endTime >= currentTime_) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void GameState::clearJumpAt(const Position& position) {
+    for (size_t i = 0; i < jumps_.size(); ++i) {
+        if (jumps_[i].position == position) {
+            jumps_.erase(jumps_.begin() + i);
+            return;
+        }
+    }
+}
+
 void GameState::requestMove(const Position& from, const Position& to) {
     if (!pendingMoves_.empty()) {
         return;

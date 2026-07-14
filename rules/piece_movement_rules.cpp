@@ -84,9 +84,9 @@ bool KnightRule::isLegalMove(const Position& from, const Position& to, const Boa
 
 bool PawnRule::isStartingRow(int forwardStep, int row, int rowCount) const {
     if (forwardStep == -1) {
-        return row == rowCount - 1;
+        return row == rowCount - 2;
     }
-    return row == 0;
+    return row == 1;
 }
 
 bool PawnRule::isForwardPathClear(const Position& from, int forwardStep, const Board& board) const {

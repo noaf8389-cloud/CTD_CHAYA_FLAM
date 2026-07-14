@@ -11,6 +11,14 @@ public:
 
     static const inline long long MS_PER_CELL = 1000;
 
+    static const inline long long JUMP_DURATION_MS = 1000;
+
+    void startJump(const Position& position) {
+        jumps_.push_back(Jump{position, currentTime_ + JUMP_DURATION_MS});}
+
+    bool hasActiveJumpAt(const Position& position) const;
+    void clearJumpAt(const Position& position);
+
     explicit GameState(Board board) : board_(std::move(board)) {}
 
     Board& getBoard() { return board_; }
@@ -39,4 +47,5 @@ private:
     std::vector<Motion> pendingMoves_;
     char playerColor_ = DEFAULT_PLAYER_COLOR;
     bool gameOver_ = false;
+    std::vector<Jump> jumps_;
 };

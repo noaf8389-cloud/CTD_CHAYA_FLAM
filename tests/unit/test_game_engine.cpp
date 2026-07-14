@@ -124,6 +124,42 @@ TEST_CASE("a pawn that reaches the last row is printed as a queen") {
 
 TEST_CASE("a pawn can advance two cells from its starting row through the full engine") {
     std::string output = runScenario(
-        "Board:\n. . . .\n. . . .\n. . . .\n. . . .\nwP . . .\nCommands:\nclick 50 450\nclick 50 250\nwait 2000\nprint board\n");
-    REQUIRE(output == ". . . .\n. . . .\nwP . . .\n. . . .\n. . . .\n");
+        "Board:\n. . . .\n. . . .\n. . . .\nwP . . .\n. . . .\nCommands:\nclick 50 350\nclick 50 150\nwait 2000\nprint board\n");
+    REQUIRE(output == ". . . .\nwP . . .\n. . . .\n. . . .\n. . . .\n");
+}
+
+TEST_CASE("jump_lands_normally_when_no_enemy_arrives") {
+    std::string output = runScenario(
+        "Board:\n. . .\n. wK .\n. . .\nCommands:\njump 150 150\nwait 1000\nprint board\n");
+    REQUIRE(output == ". . .\n. wK .\n. . .\n");
+}
+
+TEST_CASE("airborne_piece_captures_arriving_enemy") {
+    std::string output = runScenario(
+        "Board:\n. . .\nwK bR .\n. . .\nCommands:\njump 50 150\nclick 150 150\nclick 50 150\nwait 1000\nprint board\n");
+    REQUIRE(output == ". . .\nwK . .\n. . .\n");
+}
+
+TEST_CASE("jump_too_late_does_not_save_piece") {
+    std::string output = runScenario(
+        "Board:\n. . .\nwK bR .\n. . .\nCommands:\nclick 150 150\nclick 50 150\nwait 1000\njump 50 150\nprint board\n");
+    REQUIRE(output == ". . .\nbR . .\n. . .\n");
+}
+
+TEST_CASE("enemy_arrives_after_landing_captures_normally") {
+    std::string output = runScenario(
+        "Board:\n. . . .\nwK . . bR\n. . . .\nCommands:\njump 50 150\nwait 1000\nclick 350 150\nclick 50 150\nwait 3000\nprint board\n");
+    REQUIRE(output == ". . . .\nbR . . .\n. . . .\n");
+}
+
+TEST_CASE("cannot_jump_while_moving") {
+    std::string output = runScenario(
+        "Board:\nwR . .\nCommands:\nclick 50 50\nclick 250 50\nwait 500\njump 50 50\nwait 1500\nprint board\n");
+    REQUIRE(output == ". . wR\n");
+}
+
+TEST_CASE("airborne_capture_only_enemy") {
+    std::string output = runScenario(
+        "Board:\n. . .\nwK wR .\n. . .\nCommands:\njump 50 150\nclick 150 150\nclick 50 150\nwait 1000\nprint board\n");
+    REQUIRE(output == ". . .\nwK wR .\n. . .\n");
 }
