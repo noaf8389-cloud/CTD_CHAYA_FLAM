@@ -115,3 +115,15 @@ TEST_CASE("move commands after the game ends are ignored but wait and print stil
         "Board:\nwR . bK\n. . .\n. wQ .\nCommands:\nclick 50 50\nclick 250 50\nwait 2000\nclick 150 250\nclick 250 250\nwait 1000\nprint board\n");
     REQUIRE(output == ". . wR\n. . .\n. wQ .\n");
 }
+
+TEST_CASE("a pawn that reaches the last row is printed as a queen") {
+    std::string output = runScenario(
+        "Board:\n. . . .\nwP . . .\n. . . .\n. . . .\nCommands:\nclick 50 150\nclick 50 50\nwait 1000\nprint board\n");
+    REQUIRE(output == "wQ . . .\n. . . .\n. . . .\n. . . .\n");
+}
+
+TEST_CASE("a pawn can advance two cells from its starting row through the full engine") {
+    std::string output = runScenario(
+        "Board:\n. . . .\n. . . .\n. . . .\n. . . .\nwP . . .\nCommands:\nclick 50 450\nclick 50 250\nwait 2000\nprint board\n");
+    REQUIRE(output == ". . . .\n. . . .\nwP . . .\n. . . .\n. . . .\n");
+}

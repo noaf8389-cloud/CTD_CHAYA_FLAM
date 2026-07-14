@@ -80,26 +80,58 @@ bool KnightRule::isLegalMove(const Position& from, const Position& to, const Boa
     return (rowDiff == 1 && colDiff == 2) || (rowDiff == 2 && colDiff == 1);
 }
 
+// PawnRule
+
+bool PawnRule::isStartingRow(int forwardStep, int row, int rowCount) const {
+    if (forwardStep == -1) {
+        return row == rowCount - 1;
+    }
+    return row == 0;
+}
+
+bool PawnRule::isForwardPathClear(const Position& from, int forwardStep, const Board& board) const {
+    Position middle{from.row + forwardStep, from.col};
+    Position destination{from.row + 2 * forwardStep, from.col};
+    return board.getCell(middle.row, middle.col) == Board::EMPTY_CELL
+        && board.getCell(destination.row, destination.col) == Board::EMPTY_CELL;
+}
+
+bool PawnRule::isPromotionRow(int forwardStep, int row, int rowCount) const {
+    if (forwardStep == -1) {
+        return row == 0;
+    }
+    return row == rowCount - 1;
+}
+
 bool PawnRule::isLegalMove(const Position& from, const Position& to, const Board& board) const {
     std::string movingToken = board.getCell(from.row, from.col);
     char color = movingToken[0];
-    int forwardStep = (color == 'w') ? -1 : 1;
+    int forwardStep = PieceRules::getForwardDirection(color);
+
+    if (isPromotionRow(forwardStep, from.row, board.getRowCount())) {
+        return false;
+    }
 
     int rowDiff = to.row - from.row;
     int colDiff = to.col - from.col;
 
-    if (rowDiff != forwardStep) {
-        return false;
+    // תנועה אלכסונית - זז שורה אחת ועמודה אחת
+    if (colDiff != 0) {
+        if (rowDiff != forwardStep) {
+            return false;
+        }
+        if (colDiff != 1 && colDiff != -1) {
+            return false;
+        }
+        return board.getCell(to.row, to.col) != Board::EMPTY_CELL;
     }
 
-    std::string destinationToken = board.getCell(to.row, to.col);
-
-    if (colDiff == 0) {
-        return destinationToken == Board::EMPTY_CELL;
+    if (rowDiff == forwardStep) {
+        return board.getCell(to.row, to.col) == Board::EMPTY_CELL;
     }
 
-    if (colDiff == 1 || colDiff == -1) {
-        return destinationToken != Board::EMPTY_CELL;
+    if (rowDiff == 2 * forwardStep && isStartingRow(forwardStep, from.row, board.getRowCount())) {
+        return isForwardPathClear(from, forwardStep, board);
     }
 
     return false;

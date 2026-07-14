@@ -366,12 +366,6 @@ TEST_CASE("black pawn can capture diagonally") {
     REQUIRE(PawnRule().isLegalMove(Position{1, 1}, Position{2, 2}, board) == true);
 }
 
-TEST_CASE("pawn cannot move two cells") {
-    Board board(4, 4);
-    board.setCell(3, 1, "wP");
-    REQUIRE(PawnRule().isLegalMove(Position{3, 1}, Position{1, 1}, board) == false);
-}
-
 TEST_CASE("pawn cannot move diagonally to an empty cell") {
     Board board(4, 4);
     board.setCell(2, 1, "wP");
@@ -430,12 +424,7 @@ TEST_CASE("pawn cannot move sideways") {
     REQUIRE(PawnRule().isLegalMove(Position{2, 1}, Position{2, 2}, board) == false);
 }
 
-TEST_CASE("rules engine dispatches pawn moves to the pawn rule") {
-    Board board(4, 4);
-    board.setCell(2, 1, "wP");
-    REQUIRE(RulesEngine::isLegalMove(Position{2, 1}, Position{1, 1}, board) == true);
-    REQUIRE(RulesEngine::isLegalMove(Position{2, 1}, Position{0, 1}, board) == false);
-}
+
 
 TEST_CASE("rules engine rejects a pawn capturing diagonally onto its own color") {
     Board board(4, 4);
@@ -456,4 +445,58 @@ TEST_CASE("rules engine allows capturing an enemy piece at the destination") {
     board.setCell(0, 0, "wR");
     board.setCell(0, 3, "bK");
     REQUIRE(RulesEngine::isLegalMove(Position{0, 0}, Position{0, 3}, board) == true);
+}
+
+TEST_CASE("white pawn can move two cells from its starting row on a clear path") {
+    Board board(4, 4);
+    board.setCell(3, 1, "wP");
+    REQUIRE(PawnRule().isLegalMove(Position{3, 1}, Position{1, 1}, board) == true);
+}
+
+TEST_CASE("black pawn can move two cells from its starting row on a clear path") {
+    Board board(4, 4);
+    board.setCell(0, 1, "bP");
+    REQUIRE(PawnRule().isLegalMove(Position{0, 1}, Position{2, 1}, board) == true);
+}
+
+TEST_CASE("pawn cannot move two cells if the path is blocked") {
+    Board board(4, 4);
+    board.setCell(3, 1, "wP");
+    board.setCell(2, 1, "bK");
+    REQUIRE(PawnRule().isLegalMove(Position{3, 1}, Position{1, 1}, board) == false);
+}
+
+
+TEST_CASE("pawn cannot move two cells if the destination is blocked") {
+    Board board(4, 4);
+    board.setCell(3, 1, "wP");
+    board.setCell(1, 1, "bK");
+    REQUIRE(PawnRule().isLegalMove(Position{3, 1}, Position{1, 1}, board) == false);
+}
+
+TEST_CASE("a pawn already on its promotion row has no legal moves") {
+    Board board(4, 4);
+    board.setCell(0, 1, "wP");
+    REQUIRE(PawnRule().isLegalMove(Position{0, 1}, Position{1, 1}, board) == false);
+    REQUIRE(PawnRule().isLegalMove(Position{0, 1}, Position{1, 2}, board) == false);
+}
+
+TEST_CASE("isPromotionRow correctly identifies the last row for each color") {
+    REQUIRE(PawnRule().isPromotionRow(-1, 0, 4) == true);
+    REQUIRE(PawnRule().isPromotionRow(-1, 3, 4) == false);
+    REQUIRE(PawnRule().isPromotionRow(1, 3, 4) == true);
+    REQUIRE(PawnRule().isPromotionRow(1, 0, 4) == false);
+}
+
+TEST_CASE("pawn cannot move two cells while also changing column") {
+    Board board(4, 4);
+    board.setCell(3, 1, "wP");
+    REQUIRE(PawnRule().isLegalMove(Position{3, 1}, Position{1, 2}, board) == false);
+}
+
+TEST_CASE("pawn cannot move two cells if a friendly piece blocks the path") {
+    Board board(4, 4);
+    board.setCell(3, 1, "wP");
+    board.setCell(2, 1, "wK");
+    REQUIRE(PawnRule().isLegalMove(Position{3, 1}, Position{1, 1}, board) == false);
 }

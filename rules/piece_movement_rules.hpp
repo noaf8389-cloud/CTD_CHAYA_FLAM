@@ -46,6 +46,11 @@ public:
 class PawnRule : public PieceRule {
 public:
     bool isLegalMove(const Position& from, const Position& to, const Board& board) const override;
+    bool isPromotionRow(int forwardStep, int row, int rowCount) const;
+
+private:
+    bool isStartingRow(int forwardStep, int row, int rowCount) const;
+    bool isForwardPathClear(const Position& from, int forwardStep, const Board& board) const;
 };
 
 class RulesEngine {
