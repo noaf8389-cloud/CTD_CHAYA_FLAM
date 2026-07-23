@@ -1,0 +1,9 @@
+{
+  "physics": {
+    "next_state_when_finished": "idle"
+  },
+  "graphics": {
+    "frames_per_sec": 8,
+    "is_loop": true
+  }
+}

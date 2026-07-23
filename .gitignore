@@ -1,3 +1,14 @@
 *.obj
 *.exe
+*.pdb
+*.ilk
 .vscode/
+.vs/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Testing/
+ui/CTD26-main/cpp/build/
+ui/CTD26-main/cpp/OpenCV_451/
+server/build/
+server/third_party/
