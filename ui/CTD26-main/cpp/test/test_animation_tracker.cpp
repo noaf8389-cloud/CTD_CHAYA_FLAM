@@ -28,12 +28,13 @@ void write_state(const fs::path& theme_root, const std::string& code, const std:
            << " \"physics\": {\"next_state_when_finished\": \"" << next_state << "\"}}";
 }
 
-// Each mode: 1 frame, 10 fps -> 0.1 second cycle. move/jump -> rest -> idle.
+// Each mode: 1 frame, 10 fps -> 0.1 second cycle. move -> long_rest -> idle. jump -> short_rest -> idle.
 PieceAssets make_test_assets() {
     fs::path theme = make_theme("kfc_test_theme_animation_tracker");
-    write_state(theme, "AA", "move", 10.0, "rest");
-    write_state(theme, "AA", "jump", 10.0, "rest");
-    write_state(theme, "AA", "rest", 10.0, "idle");
+    write_state(theme, "AA", "move", 10.0, "long_rest");
+    write_state(theme, "AA", "jump", 10.0, "short_rest");
+    write_state(theme, "AA", "long_rest", 10.0, "idle");
+    write_state(theme, "AA", "short_rest", 10.0, "idle");
     write_state(theme, "AA", "idle", 10.0, "idle");
     return PieceAssets(theme.string());
 }
@@ -100,7 +101,7 @@ TEST(animation_tracker_relocates_to_destination_on_move_made_event) {
     bus.publish(MoveMadeEvent{Position{0, 0}, Position{0, 3}, "aA", 1200});
 
     auto status = tracker.update(0, 3, "AA");
-    EXPECT_EQ(status.state, std::string("rest"));
+    EXPECT_EQ(status.state, std::string("long_rest"));
     EXPECT_EQ(status.time_in_state, 0.0);
 }
 
@@ -117,7 +118,7 @@ TEST(animation_tracker_does_not_relocate_before_move_made_event) {
     EXPECT_EQ(status.state, std::string("move"));   //  MoveMadeEvent still don't come
 }
 
-TEST(animation_tracker_transitions_to_rest_when_jump_lands) {
+TEST(animation_tracker_transitions_to_short_rest_when_jump_lands) {
     PieceAssets assets = make_test_assets();
     EventBus bus;
     double fake_now = 1.0;
@@ -128,7 +129,7 @@ TEST(animation_tracker_transitions_to_rest_when_jump_lands) {
     bus.publish(JumpLandedEvent{Position{0, 0}, "aA", 1200});
 
     auto status = tracker.update(0, 0, "AA");
-    EXPECT_EQ(status.state, std::string("rest"));
+    EXPECT_EQ(status.state, std::string("short_rest"));
 }
 
 TEST(animation_tracker_stays_in_rest_regardless_of_elapsed_time) {
@@ -139,11 +140,11 @@ TEST(animation_tracker_stays_in_rest_regardless_of_elapsed_time) {
 
     bus.publish(JumpStartedEvent{Position{0, 0}, "aA", 50, 1000});
     fake_now = 1.05;
-    bus.publish(JumpLandedEvent{Position{0, 0}, "aA", 1050});  // -> rest, time=0
+    bus.publish(JumpLandedEvent{Position{0, 0}, "aA", 1050});  // -> short_rest, time=0
 
     fake_now = 5.0;   // Much beyond the rest animation cycle
     auto status = tracker.update(0, 0, "AA");
-    EXPECT_EQ(status.state, std::string("rest"));   // Not progressing on its own — waiting for RestEndedEvent
+    EXPECT_EQ(status.state, std::string("short_rest"));   // Not progressing on its own — waiting for RestEndedEvent
 }
 
 TEST(animation_tracker_transitions_to_idle_on_rest_ended_event) {
@@ -154,7 +155,7 @@ TEST(animation_tracker_transitions_to_idle_on_rest_ended_event) {
 
     bus.publish(JumpStartedEvent{Position{0, 0}, "aA", 50, 1000});
     fake_now = 1.05;
-    bus.publish(JumpLandedEvent{Position{0, 0}, "aA", 1050});  // -> rest, time=0
+    bus.publish(JumpLandedEvent{Position{0, 0}, "aA", 1050});  // -> short_rest, time=0
 
     fake_now = 4.0;
     bus.publish(RestEndedEvent{Position{0, 0}, "aA", 4000});
@@ -200,5 +201,5 @@ TEST(animation_tracker_rest_ended_event_does_not_affect_a_different_position) {
     bus.publish(RestEndedEvent{Position{3, 3}, "aA", 1050});
 
     auto status = tracker.update(0, 0, "AA");
-    EXPECT_EQ(status.state, std::string("rest"));   // Not affected by a rest that ended in a different slot
+    EXPECT_EQ(status.state, std::string("short_rest"));   // Not affected by a rest that ended in a different slot
 }

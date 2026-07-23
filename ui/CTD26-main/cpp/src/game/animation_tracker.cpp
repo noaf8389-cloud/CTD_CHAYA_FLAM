@@ -59,8 +59,7 @@ void AnimationTracker::onJumpLanded(const JumpLandedEvent& event) {
 void AnimationTracker::onRestEnded(const RestEndedEvent& event) {
     std::lock_guard<std::mutex> lock(mutex_);
     std::pair<int, int> key{event.position.row, event.position.col};
-    std::string code = token_to_piece_code(event.piece_token);
-    entries_[key] = Entry{piece_assets_.next_state_for(code, "rest"), clock_(), std::nullopt, std::nullopt, 0.0};
+    entries_[key] = Entry{"idle", clock_(), std::nullopt, std::nullopt, 0.0};
 }
 
 AnimationTracker::Status AnimationTracker::update(int row, int col, const std::string& code) {
@@ -71,7 +70,8 @@ AnimationTracker::Status AnimationTracker::update(int row, int col, const std::s
 
     if (it == entries_.end()) {
         entries_[key] = Entry{"idle", now, std::nullopt, std::nullopt, 0.0};
-    } else if (it->second.state != "move" && it->second.state != "jump" && it->second.state != "rest"
+    } else if (it->second.state != "move" && it->second.state != "jump"
+               && it->second.state != "long_rest" && it->second.state != "short_rest"
                && piece_assets_.is_state_finished(code, it->second.state, now - it->second.state_entered_at)) {
         entries_[key] = Entry{piece_assets_.next_state_for(code, it->second.state), now, std::nullopt, std::nullopt, 0.0};
     }

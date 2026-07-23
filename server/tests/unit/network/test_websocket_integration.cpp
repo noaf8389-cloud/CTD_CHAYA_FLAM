@@ -3,8 +3,10 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include <ixwebsocket/IXNetSystem.h>
 #include <ixwebsocket/IXWebSocket.h>
@@ -43,15 +45,15 @@ TEST_CASE("a real client receives a MoveStartedEvent broadcast after sending cli
 
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-    std::atomic<bool> received{false};
-    std::string receivedMessage;
+    std::mutex messagesMutex;
+    std::vector<std::string> receivedMessages;
 
     ix::WebSocket client;
     client.setUrl("ws://127.0.0.1:" + std::to_string(port));
     client.setOnMessageCallback([&](const ix::WebSocketMessagePtr& msg) {
         if (msg->type == ix::WebSocketMessageType::Message) {
-            receivedMessage = msg->str;
-            received = true;
+            std::lock_guard<std::mutex> lock(messagesMutex);
+            receivedMessages.push_back(msg->str);
         }
     });
     client.start();
@@ -61,8 +63,15 @@ TEST_CASE("a real client receives a MoveStartedEvent broadcast after sending cli
     client.send(R"({"command":"click","row":0,"col":0})");
     client.send(R"({"command":"click","row":0,"col":3})");
 
-    REQUIRE(waitFor([&]() { return received.load(); }));
-    REQUIRE(receivedMessage.find("MoveStartedEvent") != std::string::npos);
+    auto containsMoveStarted = [&]() {
+        std::lock_guard<std::mutex> lock(messagesMutex);
+        for (const std::string& message : receivedMessages) {
+            if (message.find("MoveStartedEvent") != std::string::npos) return true;
+        }
+        return false;
+    };
+
+    REQUIRE(waitFor(containsMoveStarted));
 
     client.stop();
 }
