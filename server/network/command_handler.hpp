@@ -12,9 +12,9 @@ public:
     explicit CommandHandler(GameSession& gameState);
 
     /// Parses and executes a command received from a client.
-    void handleMessage(const std::string& rawMessage);
+    void handleMessage(const std::string& rawMessage, char actingColor);
 
 private:
-    using Handler = std::function<void(int row, int col)>;
+    using Handler = std::function<void(int row, int col, char)>;
     std::unordered_map<std::string, Handler> handlers_;
 };

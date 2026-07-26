@@ -34,3 +34,34 @@ TEST(board_cell_to_pixel_corners) {
 TEST(board_throws_on_missing_file) {
     EXPECT_THROWS(BoardView("this/path/does/not/exist.png"));
 }
+
+TEST(board_pixel_to_cell_is_the_inverse_of_cell_to_pixel) {
+    BoardView board(make_temp_png(50, 50));
+    auto [x, y] = board.cell_to_pixel(3, 5);
+    auto [row, col] = board.pixel_to_cell(x, y);
+    EXPECT_EQ(row, 3);
+    EXPECT_EQ(col, 5);
+}
+
+TEST(board_interpolated_pixel_at_progress_zero_is_the_from_cell) {
+    BoardView board(make_temp_png(50, 50));
+    auto [fx, fy] = board.cell_to_pixel(1, 1);
+    auto [x, y] = board.interpolated_pixel(1, 1, 4, 4, 0.0);
+    EXPECT_EQ(x, fx);
+    EXPECT_EQ(y, fy);
+}
+
+TEST(board_interpolated_pixel_at_progress_one_is_the_to_cell) {
+    BoardView board(make_temp_png(50, 50));
+    auto [tx, ty] = board.cell_to_pixel(4, 4);
+    auto [x, y] = board.interpolated_pixel(1, 1, 4, 4, 1.0);
+    EXPECT_EQ(x, tx);
+    EXPECT_EQ(y, ty);
+}
+
+TEST(board_interpolated_pixel_at_progress_half_is_the_midpoint) {
+    BoardView board(make_temp_png(50, 50));
+    auto [x, y] = board.interpolated_pixel(0, 0, 2, 0, 0.5);
+    EXPECT_EQ(x, BoardView::kBoardLeftPx);
+    EXPECT_EQ(y, BoardView::kBoardTopPx + BoardView::kCellPx);
+}

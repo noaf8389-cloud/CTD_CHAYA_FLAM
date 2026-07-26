@@ -18,8 +18,8 @@ TEST_CASE("GameSession::handleClick publishes MoveStartedEvent for a legal move"
     std::vector<MoveStartedEvent> started;
     bus.subscribe<MoveStartedEvent>([&started](const MoveStartedEvent& e) { started.push_back(e); });
 
-    session.handleClick(0, 0);    // select (0,0)
-    session.handleClick(0, 3);    // move to (0,3)
+    session.handleClick(0, 0, 'w');
+    session.handleClick(0, 3, 'w');
 
     REQUIRE(started.size() == 1);
     REQUIRE(started[0].from.row == 0);
@@ -38,7 +38,7 @@ TEST_CASE("GameSession::handleClick publishes nothing when the click only select
     std::vector<MoveStartedEvent> started;
     bus.subscribe<MoveStartedEvent>([&started](const MoveStartedEvent& e) { started.push_back(e); });
 
-    session.handleClick(0, 0);
+    session.handleClick(0, 0, 'w');
 
     REQUIRE(started.empty());
 }
@@ -51,8 +51,22 @@ TEST_CASE("GameSession::handleClick publishes nothing when the target is illegal
     std::vector<MoveStartedEvent> started;
     bus.subscribe<MoveStartedEvent>([&started](const MoveStartedEvent& e) { started.push_back(e); });
 
-    session.handleClick(0, 0);
-    session.handleClick(1, 1);  // אלכסון - לא חוקי לצריח
+    session.handleClick(0, 0, 'w');
+    session.handleClick(1, 1, 'w');
+
+    REQUIRE(started.empty());
+}
+
+TEST_CASE("GameSession::handleClick ignores a click from the wrong acting color") {
+    GameState gameState(makeBoardWithRook());
+    EventBus bus;
+    GameSession session(gameState, bus);
+
+    std::vector<MoveStartedEvent> started;
+    bus.subscribe<MoveStartedEvent>([&started](const MoveStartedEvent& e) { started.push_back(e); });
+
+    session.handleClick(0, 0, 'b');   // wR at (0,0), but acting as black
+    session.handleClick(0, 3, 'b');
 
     REQUIRE(started.empty());
 }
@@ -65,8 +79,8 @@ TEST_CASE("GameSession::update publishes MoveMadeEvent once a move completes") {
     std::vector<MoveMadeEvent> made;
     bus.subscribe<MoveMadeEvent>([&made](const MoveMadeEvent& e) { made.push_back(e); });
 
-    session.handleClick(0, 0);
-    session.handleClick(0, 3);
+    session.handleClick(0, 0, 'w');
+    session.handleClick(0, 3, 'w');
     session.update(100000);
 
     REQUIRE(made.size() == 1);
@@ -86,8 +100,8 @@ TEST_CASE("GameSession::update publishes PieceCapturedEvent on a capture") {
     std::vector<PieceCapturedEvent> captured;
     bus.subscribe<PieceCapturedEvent>([&captured](const PieceCapturedEvent& e) { captured.push_back(e); });
 
-    session.handleClick(0, 0);
-    session.handleClick(0, 3);
+    session.handleClick(0, 0, 'w');
+    session.handleClick(0, 3, 'w');
     session.update(100000);
 
     REQUIRE(captured.size() == 1);
@@ -106,8 +120,8 @@ TEST_CASE("GameSession::update publishes GameOverEvent when a king is captured")
     std::vector<GameOverEvent> over;
     bus.subscribe<GameOverEvent>([&over](const GameOverEvent& e) { over.push_back(e); });
 
-    session.handleClick(0, 0);
-    session.handleClick(0, 3);
+    session.handleClick(0, 0, 'w');
+    session.handleClick(0, 3, 'w');
     session.update(100000);
 
     REQUIRE(over.size() == 1);
@@ -132,9 +146,9 @@ TEST_CASE("GameSession::update publishes RestEndedEvent once a post-move long re
     EventBus bus;
     GameSession session(gameState, bus);
 
-    session.handleClick(0, 0);
-    session.handleClick(0, 3);
-    session.update(100000);   // המהלך מסתיים, ה-rest הארוך מתחיל
+    session.handleClick(0, 0, 'w');
+    session.handleClick(0, 3, 'w');
+    session.update(100000);
 
     std::vector<RestEndedEvent> restEnded;
     bus.subscribe<RestEndedEvent>([&restEnded](const RestEndedEvent& e) { restEnded.push_back(e); });
@@ -153,8 +167,8 @@ TEST_CASE("GameSession::update publishes RestEndedEvent once a post-jump short r
     EventBus bus;
     GameSession session(gameState, bus);
 
-    session.handleJump(1, 1);
-    session.update(GameState::JUMP_DURATION_MS + 1);   // הקפיצה נוחתת, ה-rest הקצר מתחיל
+    session.handleJump(1, 1, 'w');
+    session.update(GameState::JUMP_DURATION_MS + 1);
 
     std::vector<RestEndedEvent> restEnded;
     bus.subscribe<RestEndedEvent>([&restEnded](const RestEndedEvent& e) { restEnded.push_back(e); });
@@ -171,14 +185,14 @@ TEST_CASE("GameSession::update publishes nothing when no rest has expired yet") 
     EventBus bus;
     GameSession session(gameState, bus);
 
-    session.handleClick(0, 0);
-    session.handleClick(0, 3);
+    session.handleClick(0, 0, 'w');
+    session.handleClick(0, 3, 'w');
     session.update(100000);
 
     std::vector<RestEndedEvent> restEnded;
     bus.subscribe<RestEndedEvent>([&restEnded](const RestEndedEvent& e) { restEnded.push_back(e); });
 
-    session.update(1);   // עדיין בתוך תקופת המנוחה
+    session.update(1);
 
     REQUIRE(restEnded.empty());
 }
@@ -193,7 +207,7 @@ TEST_CASE("GameSession::handleJump publishes JumpStartedEvent for a stationary p
     std::vector<JumpStartedEvent> started;
     bus.subscribe<JumpStartedEvent>([&started](const JumpStartedEvent& e) { started.push_back(e); });
 
-    session.handleJump(1, 1);
+    session.handleJump(1, 1, 'w');
 
     REQUIRE(started.size() == 1);
     REQUIRE(started[0].position == Position{1, 1});
@@ -210,7 +224,22 @@ TEST_CASE("GameSession::handleJump publishes nothing on an empty cell") {
     std::vector<JumpStartedEvent> started;
     bus.subscribe<JumpStartedEvent>([&started](const JumpStartedEvent& e) { started.push_back(e); });
 
-    session.handleJump(1, 1);
+    session.handleJump(1, 1, 'w');
+
+    REQUIRE(started.empty());
+}
+
+TEST_CASE("GameSession::handleJump publishes nothing when the piece belongs to the wrong color") {
+    Board board(3, 3);
+    board.setCell(1, 1, "wK");
+    GameState gameState(board);
+    EventBus bus;
+    GameSession session(gameState, bus);
+
+    std::vector<JumpStartedEvent> started;
+    bus.subscribe<JumpStartedEvent>([&started](const JumpStartedEvent& e) { started.push_back(e); });
+
+    session.handleJump(1, 1, 'b');
 
     REQUIRE(started.empty());
 }
@@ -222,7 +251,7 @@ TEST_CASE("GameSession::update publishes JumpLandedEvent once the jump's airborn
     EventBus bus;
     GameSession session(gameState, bus);
 
-    session.handleJump(1, 1);
+    session.handleJump(1, 1, 'w');
 
     std::vector<JumpLandedEvent> landed;
     bus.subscribe<JumpLandedEvent>([&landed](const JumpLandedEvent& e) { landed.push_back(e); });

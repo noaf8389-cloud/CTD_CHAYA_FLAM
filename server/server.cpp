@@ -9,6 +9,7 @@
 
 #include "bus/event_bus.hpp"
 #include "game_session.hpp"
+#include "player_registry.hpp"
 #include "logic/io/board_parser.hpp"
 #include "network/command_handler.hpp"
 #include "network/network_publisher.hpp"
@@ -32,11 +33,11 @@ int Server::run() {
     Board board = loadStartingBoard(layoutPath_);
     GameState gameState(board);
     EventBus bus;
+    PlayerRegistry playerRegistry;
     GameSession session(gameState, bus);
-
     NetworkPublisher publisher(bus, session);
     CommandHandler commandHandler(session);
-    GameWebSocketServer webSocketServer(port_, publisher, commandHandler);
+    GameWebSocketServer webSocketServer(port_, publisher, commandHandler, playerRegistry);
 
     if (!webSocketServer.start()) {
         return 1;

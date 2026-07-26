@@ -4,19 +4,35 @@
 TEST_CASE("new game state has no selection") {
     Board board(2, 2);
     GameState gameState(board);
-    REQUIRE(gameState.getSelectedPosition().has_value() == false);
+    REQUIRE(gameState.getSelectedPosition('w').has_value() == false);
 }
 
 TEST_CASE("select then clearSelection roundtrip") {
     Board board(2, 2);
     GameState gameState(board);
 
-    gameState.select(Position{0, 1});
-    REQUIRE(gameState.getSelectedPosition().value() == Position{0, 1});
+    gameState.select('w', Position{0, 1});
+    REQUIRE(gameState.getSelectedPosition('w').value() == Position{0, 1});
 
-    gameState.clearSelection();
-    REQUIRE(gameState.getSelectedPosition().has_value() == false);
+    gameState.clearSelection('w');
+    REQUIRE(gameState.getSelectedPosition('w').has_value() == false);
 }
+
+TEST_CASE("selections for different colors do not collide") {
+    Board board(2, 2);
+    GameState gameState(board);
+
+    gameState.select('w', Position{0, 0});
+    gameState.select('b', Position{1, 1});
+
+    REQUIRE(gameState.getSelectedPosition('w').value() == Position{0, 0});
+    REQUIRE(gameState.getSelectedPosition('b').value() == Position{1, 1});
+
+    gameState.clearSelection('w');
+    REQUIRE(gameState.getSelectedPosition('w').has_value() == false);
+    REQUIRE(gameState.getSelectedPosition('b').value() == Position{1, 1});
+}
+
 
 TEST_CASE("advanceTime accumulates across multiple calls") {
     Board board(2, 2);

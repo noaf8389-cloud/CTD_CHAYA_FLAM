@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-GameWebSocketServer::GameWebSocketServer(int port, NetworkPublisher& publisher, CommandHandler& commandHandler)
-    : server_(port, "0.0.0.0"), publisher_(publisher), commandHandler_(commandHandler) {
+GameWebSocketServer::GameWebSocketServer(int port, NetworkPublisher& publisher, CommandHandler& commandHandler, PlayerRegistry& playerRegistry)
+    : server_(port, "0.0.0.0"), publisher_(publisher), commandHandler_(commandHandler), playerRegistry_(playerRegistry) {
     server_.setOnConnectionCallback(
         [this](std::weak_ptr<ix::WebSocket> weakWebSocket,
                std::shared_ptr<ix::ConnectionState> /*connectionState*/) {
@@ -13,18 +13,24 @@ GameWebSocketServer::GameWebSocketServer(int port, NetworkPublisher& publisher, 
             }
 
             ix::WebSocket* rawConnection = webSocket.get();
+            PlayerId playerId = playerRegistry_.registerConnection();
 
             webSocket->setOnMessageCallback(
-                [this, webSocket, rawConnection](const ix::WebSocketMessagePtr& message) {
+                [this, webSocket, rawConnection, playerId](const ix::WebSocketMessagePtr& message) {
                     if (message->type == ix::WebSocketMessageType::Open) {
                         publisher_.addConnection(webSocket);
                     } else if (message->type == ix::WebSocketMessageType::Message) {
+                        std::optional<char> color = playerRegistry_.colorFor(playerId);
+                        if (!color.has_value()) {
+                            return;   // צופה ללא צבע מוקצה — מתעלמים מפקודות
+                        }
                         try {
-                            commandHandler_.handleMessage(message->str);
+                            commandHandler_.handleMessage(message->str, *color);
                         } catch (const std::exception& e) {
                             std::cerr << "Exception while handling message \"" << message->str << "\": " << e.what() << std::endl;
                         }
                     } else if (message->type == ix::WebSocketMessageType::Close) {
+                        playerRegistry_.unregisterConnection(playerId);
                         publisher_.removeConnection(rawConnection);
                     }
                 });

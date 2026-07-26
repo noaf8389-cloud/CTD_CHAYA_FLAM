@@ -5,10 +5,10 @@
 #include "bus/game_events.hpp"
 #include "logic/real_time/real_time_arbiter.hpp"
 
-void GameSession::handleClick(int row, int col) {
+void GameSession::handleClick(int row, int col, char actingColor) {
     std::lock_guard lock(mutex_);
 
-    std::optional<Motion> started = Controller::handleClick(row, col, gameState_);
+    std::optional<Motion> started = Controller::handleClick(row, col, gameState_, actingColor);
     if (!started.has_value()) {
         return;
     }
@@ -20,10 +20,10 @@ void GameSession::handleClick(int row, int col) {
     bus_.publish(MoveStartedEvent{started->from, started->to, token, duration, now});
 }
 
-void GameSession::handleJump(int row, int col) {
+void GameSession::handleJump(int row, int col, char actingColor) {
     std::lock_guard lock(mutex_);
 
-    std::optional<Position> started = Controller::handleJump(row, col, gameState_);
+    std::optional<Position> started = Controller::handleJump(row, col, gameState_, actingColor);
     if (!started.has_value()) {
         return;
     }

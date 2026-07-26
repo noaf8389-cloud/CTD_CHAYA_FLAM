@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 #include <optional>
 #include <vector>
 #include "Position.hpp"
@@ -7,8 +8,6 @@
 
 class GameState {
 public:
-    static const inline char DEFAULT_PLAYER_COLOR = 'w';
-
     static const inline long long MS_PER_CELL = 1000;
 
     static const inline long long JUMP_DURATION_MS = 1000;
@@ -29,9 +28,14 @@ public:
     Board& getBoard() { return board_; }
     const Board& getBoard() const { return board_; }
 
-    std::optional<Position> getSelectedPosition() const { return selectedPosition_; }
-    void select(const Position& position) { selectedPosition_ = position; }
-    void clearSelection() { selectedPosition_ = std::nullopt; }
+    // Returns the position currently selected by the given color, if any.
+    std::optional<Position> getSelectedPosition(char color) const {
+        auto it = selectedPositions_.find(color);
+        return it != selectedPositions_.end() ? std::optional<Position>(it->second) : std::nullopt;
+    }
+
+    void select(char color, const Position& position) { selectedPositions_[color] = position; }
+    void clearSelection(char color) { selectedPositions_.erase(color); }
 
     long long getCurrentTime() const { return currentTime_; }
     void advanceTime(long long ms) { currentTime_ += ms; }
@@ -63,10 +67,9 @@ public:
 
 private:
     Board board_;
-    std::optional<Position> selectedPosition_;
+    std::map<char, Position> selectedPositions_;
     long long currentTime_ = 0;
     std::vector<Motion> pendingMoves_;
-    char playerColor_ = DEFAULT_PLAYER_COLOR;
     bool gameOver_ = false;
     std::vector<Jump> jumps_;
     std::vector<Rest> rests_;

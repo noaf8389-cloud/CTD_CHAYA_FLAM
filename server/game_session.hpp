@@ -12,8 +12,8 @@ public:
     GameSession(GameState& gameState, EventBus& bus)
         : gameState_(gameState), bus_(bus) {}
 
-    void handleClick(int row, int col);
-    void handleJump(int row, int col);
+    void handleClick(int row, int col, char actingColor);
+    void handleJump(int row, int col, char actingColor);
 
     /// Updates the game state and publishes events for completed actions.
     void update(long long deltaMs);

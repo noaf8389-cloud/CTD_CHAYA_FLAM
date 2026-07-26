@@ -6,11 +6,11 @@
 using json = nlohmann::json;
 
 CommandHandler::CommandHandler(GameSession& session){
-    handlers_["click"] = [&session](int row, int col) { session.handleClick(row, col); };
-    handlers_["jump"] = [&session](int row, int col) { session.handleJump(row, col); };
+    handlers_["click"] = [&session](int row, int col, char color) { session.handleClick(row, col, color); };
+    handlers_["jump"] = [&session](int row, int col, char color) { session.handleJump(row, col, color); };
 }
 
-void CommandHandler::handleMessage(const std::string& rawMessage) {
+void CommandHandler::handleMessage(const std::string& rawMessage, char actingColor) {
     json parsed;
     try {
         parsed = json::parse(rawMessage);
@@ -26,5 +26,5 @@ void CommandHandler::handleMessage(const std::string& rawMessage) {
 
     const int row = parsed.value("row", 0);
     const int col = parsed.value("col", 0);
-    it->second(row, col);
+    it->second(row, col, actingColor);
 }
