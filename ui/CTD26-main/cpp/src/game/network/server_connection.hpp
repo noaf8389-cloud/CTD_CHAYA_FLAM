@@ -5,6 +5,7 @@
 #include <string>
 
 namespace ix { class WebSocket; }
+namespace ix { class WebSocketMessage; }
 
 class ServerConnection {
 public:
@@ -22,6 +23,11 @@ public:
     // Registers a handler to be called with each raw text message received from the server.
     void setOnMessage(std::function<void(const std::string&)> handler);
 
+    // Registers a handler called once the connection to the server is actually open.
+    void setOnOpen(std::function<void()> handler);
+
 private:
     std::unique_ptr<ix::WebSocket> socket_;
+    std::function<void(const std::string&)> onMessage_;
+    std::function<void()> onOpen_;
 };

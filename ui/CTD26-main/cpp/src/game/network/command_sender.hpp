@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 class ServerConnection;
 
@@ -14,6 +15,8 @@ public:
     void sendJump(int row, int col){
         send("jump", row, col);
     }
+
+    void sendLogin(const std::string& username);
 
 private:
       void send(const char* command, int row, int col);

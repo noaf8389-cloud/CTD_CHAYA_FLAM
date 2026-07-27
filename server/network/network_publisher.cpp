@@ -44,14 +44,14 @@ NetworkPublisher::NetworkPublisher(EventBus& bus, GameSession& gameSession) : bu
 
 void NetworkPublisher::addConnection(std::shared_ptr<ix::WebSocket> connection) {
     {
-        std::lock_guard<std::mutex> lock(connectionsMutex_);
+        std::lock_guard lock(connectionsMutex_);
         connections_.push_back(connection);
     }
     connection->send(envelope("GameStartedEvent", gameSession_.buildGameStartedEvent()));
 }
 
 void NetworkPublisher::removeConnection(ix::WebSocket* connection) {
-    std::lock_guard<std::mutex> lock(connectionsMutex_);
+    std::lock_guard lock(connectionsMutex_);
     connections_.erase(
         std::remove_if(connections_.begin(), connections_.end(),
                         [connection](const std::shared_ptr<ix::WebSocket>& c) { return c.get() == connection; }),
@@ -59,7 +59,7 @@ void NetworkPublisher::removeConnection(ix::WebSocket* connection) {
 }
 
 void NetworkPublisher::broadcast(const std::string& message) {
-    std::lock_guard<std::mutex> lock(connectionsMutex_);
+    std::lock_guard lock(connectionsMutex_);
     for (auto& connection : connections_) {
         connection->send(message);
     }

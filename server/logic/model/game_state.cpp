@@ -19,7 +19,7 @@ void GameState::clearJumpAt(const Position& position) {
 }
 
 void GameState::requestMove(const Position& from, const Position& to) {
-    if (!pendingMoves_.empty()) {
+    if (hasPendingMove(from)) {
         return;
     }
     int rowDiff = std::abs(from.row - to.row);

@@ -1,9 +1,12 @@
-#include "websocket_server.hpp"
-
+#include "login_message.hpp"
 #include <iostream>
+#include "websocket_server.hpp"
+#include "../third_party/nlohmann/json.hpp"
 
-GameWebSocketServer::GameWebSocketServer(int port, NetworkPublisher& publisher, CommandHandler& commandHandler, PlayerRegistry& playerRegistry)
-    : server_(port, "0.0.0.0"), publisher_(publisher), commandHandler_(commandHandler), playerRegistry_(playerRegistry) {
+using json = nlohmann::json;
+
+GameWebSocketServer::GameWebSocketServer(int port, NetworkPublisher& publisher, CommandHandler& commandHandler, PlayerRegistry& playerRegistry, PlayerAccountStore& accounts)
+    : server_(port, "0.0.0.0"), publisher_(publisher), commandHandler_(commandHandler), playerRegistry_(playerRegistry), accounts_(accounts) {
     server_.setOnConnectionCallback(
         [this](std::weak_ptr<ix::WebSocket> weakWebSocket,
                std::shared_ptr<ix::ConnectionState> /*connectionState*/) {
@@ -20,9 +23,21 @@ GameWebSocketServer::GameWebSocketServer(int port, NetworkPublisher& publisher, 
                     if (message->type == ix::WebSocketMessageType::Open) {
                         publisher_.addConnection(webSocket);
                     } else if (message->type == ix::WebSocketMessageType::Message) {
+                        if (auto request = parseLoginRequest(message->str)) {
+                            LoginResult result = accounts_.loginOrRegister(request->username, request->password);
+                            if (result.success) {
+                                playerRegistry_.setUsername(playerId, request->username);
+                            }
+                            json response;
+                            response["type"] = "LoginResultEvent";
+                            response["payload"] = {{"success", result.success}, {"rating", result.rating}};
+                            webSocket->send(response.dump());
+                            return;
+                        }
+
                         std::optional<char> color = playerRegistry_.colorFor(playerId);
                         if (!color.has_value()) {
-                            return;   // צופה ללא צבע מוקצה — מתעלמים מפקודות
+                            return;
                         }
                         try {
                             commandHandler_.handleMessage(message->str, *color);

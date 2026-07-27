@@ -17,6 +17,7 @@
 #include "../../../network/network_publisher.hpp"
 #include "../../../network/websocket_server.hpp"
 #include "../../../player_registry.hpp"
+#include "../../../db/sqlite_player_account_store.hpp"
 
 namespace {
     bool waitFor(const std::function<bool()>& predicate, int timeoutMs = 5000) {
@@ -40,9 +41,10 @@ TEST_CASE("a real client receives a MoveStartedEvent broadcast after sending cli
     NetworkPublisher publisher(bus, session);
     CommandHandler commandHandler(session);
     PlayerRegistry playerRegistry;
+    SqlitePlayerAccountStore accounts(":memory:");
 
     const int port = 8901;
-    GameWebSocketServer server(port, publisher, commandHandler, playerRegistry);
+    GameWebSocketServer server(port, publisher, commandHandler, playerRegistry, accounts);
     REQUIRE(server.start());
 
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -90,9 +92,10 @@ TEST_CASE("a real client receives move, jump and rest lifecycle events over WebS
     NetworkPublisher publisher(bus, session);
     CommandHandler commandHandler(session);
     PlayerRegistry playerRegistry;
+    SqlitePlayerAccountStore accounts(":memory:");
 
     const int port = 8902;
-    GameWebSocketServer server(port, publisher, commandHandler, playerRegistry);
+    GameWebSocketServer server(port, publisher, commandHandler, playerRegistry, accounts);
     REQUIRE(server.start());
 
     std::atomic<bool> stopTicking{false};

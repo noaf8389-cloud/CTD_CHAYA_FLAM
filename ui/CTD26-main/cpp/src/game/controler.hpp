@@ -2,11 +2,13 @@
 #include "animation_tracker.hpp"
 #include "graphics/BoardView.hpp"
 #include "graphics/piece_assets.hpp"
+#include "graphics/table_layout.hpp"
 #include "network/server_connection.hpp"
 #include "network/command_sender.hpp"
 #include "network/network_receiver.hpp"
 #include "bus/event_bus.hpp"
 #include "client_board_state.hpp"
+#include "player_panel_tracker.hpp"
 #include "piece_code.hpp"
 #include <chrono>
 #include <optional>
@@ -16,7 +18,7 @@
 class Controler {
 public:
     // Loads piece assets and connects to the server at server_url; the board itself arrives via GameStartedEvent.
-    Controler(const std::string& asset_root, const std::string& theme, const std::string& server_url = "ws://127.0.0.1:8080");
+    Controler(const std::string& asset_root, const std::string& theme, const std::string& username, const std::string& server_url = "ws://127.0.0.1:8080");
     void run();
 
 
@@ -36,10 +38,12 @@ private:
 
     BoardView board_view;
     PieceAssets piece_assets;
+    TableLayout table_layout_;
     ServerConnection server_connection_;
     CommandSender command_sender_;
     EventBus event_bus_;
     ClientBoardState client_board_state_;
+    PlayerPanelTracker player_panels_;
     NetworkReceiver network_receiver_;
     AnimationTracker animation_tracker;
 };

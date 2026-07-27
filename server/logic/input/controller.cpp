@@ -85,7 +85,7 @@ std::optional<Position> Controller::handleJump(int row, int col, GameState& game
         return std::nullopt;
     }
 
-    if (gameState.hasPendingMove(position.value())) {
+    if (gameState.hasPendingMove(position.value()) || gameState.isResting(position.value())) {
         return std::nullopt;
     }
 

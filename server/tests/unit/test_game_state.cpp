@@ -370,3 +370,17 @@ TEST_CASE("extractExpiredRests returns multiple positions that expired in the sa
 
     REQUIRE(gameState.extractExpiredRests().size() == 2);
 }
+
+TEST_CASE("two different pieces can have pending moves at the same time") {
+    Board board(3, 3);
+    GameState gameState(board);
+    gameState.requestMove(Position{0, 0}, Position{1, 1});
+    gameState.requestMove(Position{2, 2}, Position{1, 2});
+
+    REQUIRE(gameState.hasPendingMove(Position{0, 0}));
+    REQUIRE(gameState.hasPendingMove(Position{2, 2}));
+
+    gameState.advanceTime(1000);
+    auto completed = gameState.extractCompletedMoves();
+    REQUIRE(completed.size() == 2);
+}

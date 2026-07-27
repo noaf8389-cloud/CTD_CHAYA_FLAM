@@ -26,6 +26,6 @@ private:
 
     EventBus& bus_;
     GameSession& gameSession_;
-    std::mutex connectionsMutex_;
+    std::recursive_mutex connectionsMutex_;
     std::vector<std::shared_ptr<ix::WebSocket>> connections_;
 };

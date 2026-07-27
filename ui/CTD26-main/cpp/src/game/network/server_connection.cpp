@@ -7,7 +7,13 @@ ServerConnection::ServerConnection(const std::string& server_url) {
     ix::initNetSystem();
     socket_ = std::make_unique<ix::WebSocket>();
     socket_->setUrl(server_url);
-}
+    socket_->setOnMessageCallback([this](const ix::WebSocketMessagePtr& message) {
+        if (message->type == ix::WebSocketMessageType::Open) {
+            if (onOpen_) onOpen_();
+        } else if (message->type == ix::WebSocketMessageType::Message) {
+            if (onMessage_) onMessage_(message->str);
+        }
+    });}
 
 void ServerConnection::start() {
     socket_->start();
@@ -22,9 +28,9 @@ void ServerConnection::send(const std::string& message) {
 }
 
 void ServerConnection::setOnMessage(std::function<void(const std::string&)> handler) {
-    socket_->setOnMessageCallback([handler](const ix::WebSocketMessagePtr& message) {
-        if (message->type == ix::WebSocketMessageType::Message) {
-            handler(message->str);
-        }
-    });
+    onMessage_ = std::move(handler);
+}
+
+void ServerConnection::setOnOpen(std::function<void()> handler) {
+    onOpen_ = std::move(handler);
 }

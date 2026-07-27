@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <optional>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -22,8 +23,19 @@ public:
     // Returns the color assigned to the given connection, or std::nullopt if none was available.
     std::optional<char> colorFor(PlayerId id) const;
 
+    // Records the username reported by a connection's "login" message.
+    void setUsername(PlayerId id, std::string username);
+    std::optional<std::string> usernameFor(PlayerId id) const;
+
+    std::optional<std::string> usernameForColor(char color) const;
+
 private:
+    struct PlayerInfo {
+        char color;
+        std::string username;
+    };
+
     std::vector<char> availableColors_;
-    std::unordered_map<PlayerId, char> assignments_;
+    std::unordered_map<PlayerId, PlayerInfo> assignments_;
     PlayerId nextId_ = 1;
 };

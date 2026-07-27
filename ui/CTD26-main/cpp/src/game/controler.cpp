@@ -1,24 +1,30 @@
 #include "controler.hpp"
 #include "graphics/compositing.hpp"
 #include "input/board_mapper.hpp"
+#define NOMINMAX
+#include <windows.h>
+#include <algorithm>
 #include <filesystem>
 #include <tuple>
 
 namespace fs = std::filesystem;
 
-Controler::Controler(const std::string& asset_root, const std::string& theme, const std::string& server_url)
+Controler::Controler(const std::string& asset_root, const std::string& theme, const std::string& username, const std::string& server_url)
     : board_view((fs::path(asset_root) / "board.png").string()),
       piece_assets((fs::path(asset_root) / theme).string()),
+      table_layout_(board_view.base().cols, board_view.base().rows),
       server_connection_(server_url),
       command_sender_(server_connection_),
       client_board_state_(event_bus_),
+      player_panels_(event_bus_),
       network_receiver_(server_connection_, event_bus_),
       animation_tracker(event_bus_, piece_assets) {
+    server_connection_.setOnOpen([this, username]() { command_sender_.sendLogin(username); });
     server_connection_.start();
 }
 
 cv::Mat Controler::render_frame() {
-    cv::Mat frame = board_view.base().clone();
+    cv::Mat board_frame = board_view.base().clone();
     Board board = client_board_state_.board();
 
     for (int row = 0; row < board.getRowCount(); ++row) {
@@ -40,11 +46,11 @@ cv::Mat Controler::render_frame() {
                 std::tie(x, y) = board_view.cell_to_pixel(row, col);
             }
 
-            blit_with_alpha(frame, image, x, y);
+            blit_with_alpha(board_frame, image, x, y);
         }
     }
 
-    return frame;
+    return table_layout_.render(board_frame, player_panels_.black(), player_panels_.white());
 }
 
 void Controler::run() {
@@ -60,7 +66,22 @@ void Controler::run() {
 
 void Controler::install_mouse_callback() {
     cv::namedWindow(kWindowName, cv::WINDOW_NORMAL);
-    cv::resizeWindow(kWindowName, 900, 900);
+
+    cv::Size canvas = table_layout_.canvasSize();
+
+    RECT work_area;
+    SystemParametersInfo(SPI_GETWORKAREA, 0, &work_area, 0);
+    int available_width = work_area.right - work_area.left;
+    int available_height = work_area.bottom - work_area.top;
+
+    double scale = std::min({1.0,
+        available_width * 0.9 / canvas.width,
+        available_height * 0.9 / canvas.height});
+
+    int window_width = static_cast<int>(canvas.width * scale);
+    int window_height = static_cast<int>(canvas.height * scale);
+
+    cv::resizeWindow(kWindowName, window_width, window_height);
     cv::setMouseCallback(kWindowName, &Controler::on_mouse_trampoline, this);
 }
 
@@ -93,5 +114,12 @@ void Controler::handle_click(int window_x, int window_y) {
 }
 
 std::optional<cv::Point> Controler::window_to_image_point(int window_x, int window_y) const {
-    return cv::Point(window_x, window_y);
+    cv::Point offset = table_layout_.boardOffset();
+    cv::Rect boardRect(offset, board_view.base().size());
+    cv::Point clicked(window_x, window_y);
+
+    if (!boardRect.contains(clicked)) {
+        return std::nullopt;
+    }
+    return clicked - offset;
 }

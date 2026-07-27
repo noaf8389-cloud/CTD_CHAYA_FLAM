@@ -1,5 +1,6 @@
 #include "../catch2/catch_amalgamated.hpp"
 #include "../../logic/input/controller.hpp"
+#include "../../logic/real_time/real_time_arbiter.hpp"
 
 namespace {
     Board makeBoardWithPieces() {
@@ -304,4 +305,16 @@ TEST_CASE("two colors selecting independently do not interfere with each other")
 
     REQUIRE(gameState.getSelectedPosition('w').value() == Position{0, 0});
     REQUIRE(gameState.getSelectedPosition('b').value() == Position{1, 0});
+}
+
+TEST_CASE("a resting piece cannot jump") {
+    Board board(3, 3);
+    board.setCell(0, 0, "wR");
+    GameState gameState(board);
+    gameState.startJump(Position{0, 0});
+    gameState.advanceTime(GameState::JUMP_DURATION_MS + 1);
+    RealTimeArbiter::applyExpiredJumps(gameState);
+
+    std::optional<Position> result = Controller::handleJump(0, 0, gameState, 'w');
+    REQUIRE(result.has_value() == false);
 }

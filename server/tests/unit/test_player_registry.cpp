@@ -53,3 +53,53 @@ TEST_CASE("a custom color list is honored in order") {
     REQUIRE(registry.colorFor(second).value() == 'g');
     REQUIRE(registry.colorFor(third).value() == 'b');
 }
+
+TEST_CASE("usernameFor returns nullopt before a login message arrives") {
+    PlayerRegistry registry;
+    PlayerId id = registry.registerConnection();
+    REQUIRE(registry.usernameFor(id).has_value() == false);
+}
+
+TEST_CASE("setUsername records the username for an assigned connection") {
+    PlayerRegistry registry;
+    PlayerId id = registry.registerConnection();
+    registry.setUsername(id, "noa");
+    REQUIRE(registry.usernameFor(id).value() == "noa");
+}
+
+TEST_CASE("setUsername on an unassigned (spectator) connection does nothing") {
+    PlayerRegistry registry;
+    registry.registerConnection();
+    registry.registerConnection();
+    PlayerId spectator = registry.registerConnection();   // no color left
+
+    registry.setUsername(spectator, "noa");
+    REQUIRE(registry.usernameFor(spectator).has_value() == false);
+}
+
+TEST_CASE("setUsername on an unknown id does nothing") {
+    PlayerRegistry registry;
+    REQUIRE_NOTHROW(registry.setUsername(999, "noa"));
+}
+
+TEST_CASE("usernameFor returns nullopt after the connection is unregistered") {
+    PlayerRegistry registry;
+    PlayerId id = registry.registerConnection();
+    registry.setUsername(id, "noa");
+
+    registry.unregisterConnection(id);
+    REQUIRE(registry.usernameFor(id).has_value() == false);
+}
+
+TEST_CASE("usernameForColor returns the username of whoever holds that color") {
+    PlayerRegistry registry;
+    PlayerId id = registry.registerConnection();
+    registry.setUsername(id, "noa");
+
+    REQUIRE(registry.usernameForColor('w').value() == "noa");
+}
+
+TEST_CASE("usernameForColor returns nullopt when no one holds that color yet") {
+    PlayerRegistry registry;
+    REQUIRE(registry.usernameForColor('w').has_value() == false);
+}

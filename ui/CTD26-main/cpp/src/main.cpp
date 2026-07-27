@@ -5,7 +5,11 @@
 int main() {
     SetProcessDPIAware();
     try {
-        Controler("../..", "pieces3").run();
+        std::string username;
+        std::cout << "Username: ";
+        std::cin >> username;
+
+        Controler("../..", "pieces3", username).run();
         return 0;
     }
     catch (const std::exception& e) {

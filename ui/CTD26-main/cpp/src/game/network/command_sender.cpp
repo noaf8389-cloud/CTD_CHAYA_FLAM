@@ -11,3 +11,8 @@ void CommandSender::send(const char* command, int row, int col) {
     json message{{"command", command}, {"row", row}, {"col", col}};
     connection_.send(message.dump());
 }
+
+void CommandSender::sendLogin(const std::string& username) {
+    json message{{"command", "login"}, {"username", username}};
+    connection_.send(message.dump());
+}
