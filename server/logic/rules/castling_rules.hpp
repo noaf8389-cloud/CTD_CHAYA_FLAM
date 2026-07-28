@@ -2,8 +2,8 @@
 
 #include <functional>
 #include <optional>
-#include "../model/Position.hpp"
-#include "../model/board.hpp"
+#include "model/Position.hpp"
+#include "model/board.hpp"
 
 struct CastlingMove {
     Position kingFrom;

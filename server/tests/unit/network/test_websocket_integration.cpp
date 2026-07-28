@@ -11,7 +11,7 @@
 #include <ixwebsocket/IXNetSystem.h>
 #include <ixwebsocket/IXWebSocket.h>
 
-#include "../../../bus/event_bus.hpp"
+#include "bus/event_bus.hpp"
 #include "../../../game_session.hpp"
 #include "../../../network/command_handler.hpp"
 #include "../../../network/network_publisher.hpp"

@@ -3,9 +3,11 @@
 
 #include <sqlite3.h>
 #include <stdexcept>
+#include "logging/logger.hpp"
 
 SqlitePlayerAccountStore::SqlitePlayerAccountStore(const std::string& dbPath) {
     if (sqlite3_open(dbPath.c_str(), &db_) != SQLITE_OK) {
+        Logger::error("Cannot open database: " + dbPath);
         throw std::runtime_error("Cannot open database: " + dbPath);
     }
     createTableIfMissing();
@@ -27,6 +29,7 @@ void SqlitePlayerAccountStore::createTableIfMissing() {
     if (sqlite3_exec(db_, sql, nullptr, nullptr, &errorMessage) != SQLITE_OK) {
         std::string message = errorMessage ? errorMessage : "unknown error";
         sqlite3_free(errorMessage);
+        Logger::error("Cannot create players table: " + message);
         throw std::runtime_error("Cannot create players table: " + message);
     }
 }

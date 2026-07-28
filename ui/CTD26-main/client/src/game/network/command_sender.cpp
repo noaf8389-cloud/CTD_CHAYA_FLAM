@@ -1,7 +1,7 @@
 #include "command_sender.hpp"
 
 #include "server_connection.hpp"
-#include "../../third_party/nlohmann/json.hpp"
+#include "third_party/nlohmann/json.hpp"
 
 using json = nlohmann::json;
 

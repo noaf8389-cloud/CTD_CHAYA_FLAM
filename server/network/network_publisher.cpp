@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "../bus/event_serialization.hpp"
+#include "bus/event_serialization.hpp"
 #include "../game_session.hpp"
 
 namespace {

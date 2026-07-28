@@ -1,7 +1,7 @@
 #include "test_framework.hpp"
 #include "../src/game/animation_tracker.hpp"
 #include "../src/game/graphics/piece_assets.hpp"
-#include "../src/game/bus/event_bus.hpp"
+#include "bus/event_bus.hpp"
 #include <filesystem>
 #include <fstream>
 #include <opencv2/opencv.hpp>

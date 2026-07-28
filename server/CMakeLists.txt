@@ -23,16 +23,18 @@ FetchContent_MakeAvailable(sqlite3)
 set(SQLITE3_ROOT ${sqlite3_SOURCE_DIR})
 
 set(LOGIC_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/logic")
+set(SHARED_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../shared")
 file(GLOB_RECURSE LOGIC_SOURCES "${LOGIC_ROOT}/*.cpp")
 
-file(GLOB BUS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/bus/*.cpp")
+file(GLOB SHARED_BUS_SOURCES "${SHARED_ROOT}/bus/*.cpp")
+file(GLOB SHARED_LOGGING_SOURCES "${SHARED_ROOT}/logging/*.cpp")
 file(GLOB NETWORK_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/network/*.cpp")
 file(GLOB SERVER_ROOT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 file(GLOB DB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/db/*.cpp")
 file(GLOB RATING_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/rating/*.cpp")
 
-add_executable(KungFuChessServer ${SERVER_ROOT_SOURCES} ${LOGIC_SOURCES} ${BUS_SOURCES} ${NETWORK_SOURCES} ${DB_SOURCES} ${RATING_SOURCES} ${SQLITE3_ROOT}/sqlite3.c)
-target_include_directories(KungFuChessServer PRIVATE ${LOGIC_ROOT} ${CMAKE_CURRENT_SOURCE_DIR} ${SQLITE3_ROOT})
+add_executable(KungFuChessServer ${SERVER_ROOT_SOURCES} ${LOGIC_SOURCES} ${SHARED_BUS_SOURCES} ${SHARED_LOGGING_SOURCES} ${NETWORK_SOURCES} ${DB_SOURCES} ${RATING_SOURCES} ${SQLITE3_ROOT}/sqlite3.c)
+target_include_directories(KungFuChessServer PRIVATE ${LOGIC_ROOT} ${SHARED_ROOT} ${CMAKE_CURRENT_SOURCE_DIR} ${SQLITE3_ROOT})
 target_link_libraries(KungFuChessServer PRIVATE ixwebsocket)
 
 enable_testing()
@@ -51,13 +53,14 @@ add_executable(KungFuChessServerTests
     ${SERVER_ROOT_SOURCES_FOR_TESTS}
     ${TEST_SOURCES}
     ${LOGIC_SOURCES}
-    ${BUS_SOURCES}
+    ${SHARED_BUS_SOURCES}
+    ${SHARED_LOGGING_SOURCES}
     ${DB_SOURCES}
     ${RATING_SOURCES}
     ${SQLITE3_ROOT}/sqlite3.c
 )
 
-target_include_directories(KungFuChessServerTests PRIVATE ${LOGIC_ROOT} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/tests ${SQLITE3_ROOT})
+target_include_directories(KungFuChessServerTests PRIVATE ${LOGIC_ROOT} ${SHARED_ROOT} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/tests ${SQLITE3_ROOT})
 target_link_libraries(KungFuChessServerTests PRIVATE ixwebsocket)
 
 add_test(NAME KungFuChessServerTests COMMAND KungFuChessServerTests)

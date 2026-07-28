@@ -6,7 +6,7 @@
 
 #include <ixwebsocket/IXWebSocket.h>
 
-#include "../bus/event_bus.hpp"
+#include "bus/event_bus.hpp"
 
 class GameSession;
 

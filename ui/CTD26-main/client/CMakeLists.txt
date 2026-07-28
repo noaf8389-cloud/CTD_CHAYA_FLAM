@@ -19,14 +19,12 @@ FetchContent_MakeAvailable(ixwebsocket)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "src/*.hpp")
 
-set(LOGIC_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../server/logic")
-set(LOGIC_SOURCES
-    "${LOGIC_ROOT}/io/board_parser.cpp"
-    "${LOGIC_ROOT}/rules/piece_rules.cpp"
-)
+set(SHARED_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../shared")
+file(GLOB SHARED_BUS_SOURCES "${SHARED_ROOT}/bus/*.cpp")
+file(GLOB SHARED_LOGGING_SOURCES "${SHARED_ROOT}/logging/*.cpp")
 
 # Create executable
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${LOGIC_SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${SHARED_BUS_SOURCES} ${SHARED_LOGGING_SOURCES})
 
 # Set OpenCV paths
 set(OPENCV_DIR "${CMAKE_CURRENT_SOURCE_DIR}/OpenCV_451")
@@ -34,7 +32,7 @@ set(OPENCV_INCLUDE_DIR "${OPENCV_DIR}/include")
 set(OPENCV_LIB_DIR "${OPENCV_DIR}/bin")
 
 # Include directories
-target_include_directories(${PROJECT_NAME} PRIVATE ${OPENCV_INCLUDE_DIR} ${LOGIC_ROOT})
+target_include_directories(${PROJECT_NAME} PRIVATE ${OPENCV_INCLUDE_DIR} ${SHARED_ROOT} ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Link directories
 target_link_directories(${PROJECT_NAME} PRIVATE ${OPENCV_LIB_DIR})
@@ -72,9 +70,9 @@ file(GLOB_RECURSE TEST_SOURCES "test/*.cpp")
 set(LIB_SOURCES ${SOURCES})
 list(REMOVE_ITEM LIB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
 
-add_executable(KungFuChessTests ${TEST_SOURCES} ${LIB_SOURCES} ${HEADERS} ${LOGIC_SOURCES})
+add_executable(KungFuChessTests ${TEST_SOURCES} ${LIB_SOURCES} ${HEADERS} ${SHARED_BUS_SOURCES} ${SHARED_LOGGING_SOURCES})
 
-target_include_directories(KungFuChessTests PRIVATE ${OPENCV_INCLUDE_DIR} ${LOGIC_ROOT})
+target_include_directories(KungFuChessTests PRIVATE ${OPENCV_INCLUDE_DIR} ${SHARED_ROOT} ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_directories(KungFuChessTests PRIVATE ${OPENCV_LIB_DIR})
 
 target_link_libraries(KungFuChessTests PRIVATE

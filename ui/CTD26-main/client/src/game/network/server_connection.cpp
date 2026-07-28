@@ -2,6 +2,7 @@
 
 #include <ixwebsocket/IXNetSystem.h>
 #include <ixwebsocket/IXWebSocket.h>
+#include "logging/logger.hpp"
 
 ServerConnection::ServerConnection(const std::string& server_url) {
     ix::initNetSystem();
@@ -9,9 +10,14 @@ ServerConnection::ServerConnection(const std::string& server_url) {
     socket_->setUrl(server_url);
     socket_->setOnMessageCallback([this](const ix::WebSocketMessagePtr& message) {
         if (message->type == ix::WebSocketMessageType::Open) {
+            Logger::info("Connected to server");
             if (onOpen_) onOpen_();
         } else if (message->type == ix::WebSocketMessageType::Message) {
             if (onMessage_) onMessage_(message->str);
+        } else if (message->type == ix::WebSocketMessageType::Error) {
+            Logger::error("Connection error: " + message->errorInfo.reason);
+        } else if (message->type == ix::WebSocketMessageType::Close) {
+            Logger::info("Disconnected from server");
         }
     });}
 

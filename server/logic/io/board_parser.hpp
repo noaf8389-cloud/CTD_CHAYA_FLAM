@@ -2,7 +2,7 @@
 #include <istream>
 #include <vector>
 #include <string>
-#include "../model/board.hpp"
+#include "model/board.hpp"
 
 enum class ParseError {
     NONE,

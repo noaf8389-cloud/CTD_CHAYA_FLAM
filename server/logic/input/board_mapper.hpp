@@ -1,6 +1,6 @@
 #pragma once
 #include <optional>
-#include "../model/Position.hpp"
+#include "model/Position.hpp"
 
 class BoardMapper {
 public:

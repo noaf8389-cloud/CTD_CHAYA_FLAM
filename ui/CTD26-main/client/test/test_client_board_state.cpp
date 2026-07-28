@@ -1,6 +1,6 @@
 #include "test_framework.hpp"
 #include "../src/game/client_board_state.hpp"
-#include "../src/game/bus/event_bus.hpp"
+#include "bus/event_bus.hpp"
 #include "model/board.hpp"
 
 namespace {

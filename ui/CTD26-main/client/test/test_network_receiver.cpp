@@ -1,7 +1,7 @@
 #include "test_framework.hpp"
 #include "../src/game/network/network_receiver.hpp"
 #include "../src/game/network/server_connection.hpp"
-#include "../src/game/bus/event_bus.hpp"
+#include "bus/event_bus.hpp"
 
 TEST(network_receiver_dispatches_move_made_event) {
     EventBus bus;

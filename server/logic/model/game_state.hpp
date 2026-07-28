@@ -2,8 +2,8 @@
 #include <map>
 #include <optional>
 #include <vector>
-#include "Position.hpp"
-#include "board.hpp"
+#include "model/Position.hpp"
+#include "model/board.hpp"
 #include "../real_time/motion.hpp"
 
 class GameState {

@@ -1,6 +1,7 @@
 #include "game/controler.hpp"
 #include <windows.h>
 #include <iostream>
+#include "logging/logger.hpp"
 
 int main() {
     SetProcessDPIAware();
@@ -9,6 +10,7 @@ int main() {
         std::cout << "Username: ";
         std::cin >> username;
 
+        Logger::init("client.log");
         Controler("../..", "pieces3", username).run();
         return 0;
     }

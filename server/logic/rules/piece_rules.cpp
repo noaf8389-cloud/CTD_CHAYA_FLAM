@@ -1,5 +1,5 @@
 #include "piece_rules.hpp"
-#include "../model/board.hpp"
+#include "model/board.hpp"
 
 const std::string PieceRules::VALID_COLORS = "wb";
 const std::string PieceRules::VALID_PIECE_TYPES = "KQRBNP";

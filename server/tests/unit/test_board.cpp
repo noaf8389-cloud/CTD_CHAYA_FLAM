@@ -1,5 +1,5 @@
 #include "../catch2/catch_amalgamated.hpp"
-#include "../../logic/model/board.hpp"
+#include "model/board.hpp"
 #include <stdexcept>
 
 TEST_CASE("new board cells default to empty") {

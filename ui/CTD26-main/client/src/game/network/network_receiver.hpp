@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "../bus/event_serialization.hpp"
+#include "bus/event_serialization.hpp"
 
 class ServerConnection;
 class EventBus;

@@ -1,6 +1,6 @@
 #include "../catch2/catch_amalgamated.hpp"
 #include "../../game_session.hpp"
-#include "../../bus/game_events.hpp"
+#include "bus/game_events.hpp"
 
 namespace {
     Board makeBoardWithRook() {

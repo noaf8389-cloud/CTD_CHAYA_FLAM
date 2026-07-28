@@ -1,5 +1,5 @@
 #include "../../catch2/catch_amalgamated.hpp"
-#include "../../../bus/event_serialization.hpp"
+#include "bus/event_serialization.hpp"
 
 TEST_CASE("MoveMadeEvent round-trips through JSON") {
     MoveMadeEvent original{Position{1, 2}, Position{3, 4}, "wP", 12345};

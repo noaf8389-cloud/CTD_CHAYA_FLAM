@@ -8,10 +8,11 @@ CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Testing/
-ui/CTD26-main/cpp/build/
-ui/CTD26-main/cpp/OpenCV_451/
+ui/CTD26-main/client/build/
+ui/CTD26-main/client/OpenCV_451/
 server/build/
 server/third_party/
 coverage_client/
 coverage_server/
 LastCoverageResults.log
+*.log

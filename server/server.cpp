@@ -16,6 +16,7 @@
 #include "network/command_handler.hpp"
 #include "network/network_publisher.hpp"
 #include "network/websocket_server.hpp"
+#include "logging/logger.hpp"
 
 namespace {
     constexpr long long kTickMs = 50;
@@ -48,6 +49,7 @@ int Server::run() {
     }
 
     std::cout << "Server listening on port " << port_ << std::endl;
+    Logger::info("Server listening on port " + std::to_string(port_));
 
     while (true) {
         std::this_thread::sleep_for(std::chrono::milliseconds(kTickMs));

@@ -1,6 +1,6 @@
 #pragma once
-#include "../model/Position.hpp"
-#include "../model/board.hpp"
+#include "model/Position.hpp"
+#include "model/board.hpp"
 
 class MovementHelper {
 public:

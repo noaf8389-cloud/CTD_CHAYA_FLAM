@@ -2,6 +2,7 @@
 
 #include "../game_session.hpp"
 #include "../third_party/nlohmann/json.hpp"
+#include "logging/logger.hpp"
 
 using json = nlohmann::json;
 
@@ -15,6 +16,7 @@ void CommandHandler::handleMessage(const std::string& rawMessage, char actingCol
     try {
         parsed = json::parse(rawMessage);
     } catch (const json::parse_error&) {
+        Logger::warn("Malformed command JSON: " + rawMessage);
         return;
     }
 

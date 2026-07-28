@@ -3,7 +3,8 @@
 #include <iostream>
 
 #include "server_connection.hpp"
-#include "../bus/event_bus.hpp"
+#include "bus/event_bus.hpp"
+#include "logging/logger.hpp"
 
 NetworkReceiver::NetworkReceiver(ServerConnection& connection, EventBus& bus) : bus_(bus) {
     handlers_["MoveMadeEvent"] = [this](const json& payload) { bus_.publish(payload.get<MoveMadeEvent>()); };
@@ -24,6 +25,7 @@ void NetworkReceiver::handleMessage(const std::string& raw) {
     try {
         parsed = json::parse(raw);
     } catch (const json::parse_error&) {
+        Logger::warn("Malformed event JSON from server: " + raw);
         return;
     }
 
@@ -40,5 +42,6 @@ void NetworkReceiver::handleMessage(const std::string& raw) {
         it->second(parsed.at("payload"));
     } catch (const std::exception& e) {
         std::cerr << "Exception while handling event \"" << parsed.value("type", "") << "\": " << e.what() << std::endl;
+        Logger::error("Exception while handling event \"" + parsed.value("type", "") + "\": " + e.what());
     }
 }

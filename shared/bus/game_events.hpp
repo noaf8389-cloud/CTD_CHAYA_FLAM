@@ -22,7 +22,7 @@ struct PieceCapturedEvent {
 struct GameStartedEvent {
     int row_count;
     int col_count;
-    std::vector<std::string> cells;   // row-major, גודל row_count*col_count
+    std::vector<std::string> cells;
     long long timestamp_ms;
 };
 

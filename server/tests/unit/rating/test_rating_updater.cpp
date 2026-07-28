@@ -1,7 +1,7 @@
 #include "../../catch2/catch_amalgamated.hpp"
 #include "../../../rating/rating_updater.hpp"
-#include "../../../bus/event_bus.hpp"
-#include "../../../bus/game_events.hpp"
+#include "bus/event_bus.hpp"
+#include "bus/game_events.hpp"
 #include "../../../player_registry.hpp"
 #include "../../../db/player_account_store.hpp"
 #include <unordered_map>

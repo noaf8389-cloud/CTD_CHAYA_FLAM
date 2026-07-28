@@ -1,6 +1,6 @@
 #include "../../catch2/catch_amalgamated.hpp"
 
-#include "../../../bus/event_bus.hpp"
+#include "bus/event_bus.hpp"
 
 namespace {
     struct TestEvent {

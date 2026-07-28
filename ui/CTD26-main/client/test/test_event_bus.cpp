@@ -1,5 +1,5 @@
 #include "test_framework.hpp"
-#include "../src/game/bus/event_bus.hpp"
+#include "bus/event_bus.hpp"
 
 namespace {
     struct TestEvent { int value; };

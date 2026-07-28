@@ -1,5 +1,5 @@
 #include "test_framework.hpp"
-#include "../src/game/bus/event_serialization.hpp"
+#include "bus/event_serialization.hpp"
 
 TEST(position_round_trips_through_json) {
     Position p{3, 5};

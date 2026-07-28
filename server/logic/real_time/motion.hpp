@@ -1,5 +1,5 @@
 #pragma once
-#include "../model/Position.hpp"
+#include "model/Position.hpp"
 
 struct Motion {
     Position from;

@@ -1,6 +1,5 @@
 #include "controler.hpp"
 #include "graphics/compositing.hpp"
-#include "input/board_mapper.hpp"
 #define NOMINMAX
 #include <windows.h>
 #include <algorithm>
