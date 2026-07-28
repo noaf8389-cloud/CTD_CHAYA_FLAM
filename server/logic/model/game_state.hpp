@@ -52,6 +52,15 @@ public:
     // Removes and returns all queued moves whose completion time has arrived.
     std::vector<Motion> extractCompletedMoves();
 
+    // Queues a synchronized king+rook castling move; both complete at the same time.
+    // Returns false (queues nothing) if either piece already has a move in progress.
+    bool requestCastling(const Position& kingFrom, const Position& kingTo, const Position& rookFrom, const Position& rookTo);
+
+    // Records that a piece has moved away from the given square (for castling eligibility).
+    void markVacated(const Position& position) { vacatedSquares_.push_back(position); }
+    // Checks whether a piece has ever moved away from the given square.
+    bool wasEverVacated(const Position& position) const;
+
     // Removes and returns the positions of all rests whose duration has elapsed.
     std::vector<Position> extractExpiredRests();
 
@@ -73,4 +82,5 @@ private:
     bool gameOver_ = false;
     std::vector<Jump> jumps_;
     std::vector<Rest> rests_;
+    std::vector<Position> vacatedSquares_;
 };

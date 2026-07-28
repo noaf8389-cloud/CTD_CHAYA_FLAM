@@ -45,6 +45,7 @@ std::vector<CompletedMoveResult> RealTimeArbiter::applyCompletedMoves(GameState&
                 result.gameEnded = true;
             }
             
+            gameState.markVacated(motion.from);
             board.setCell(motion.from.row, motion.from.col, Board::EMPTY_CELL);
             gameState.clearJumpAt(motion.to);
             results.push_back(result);
@@ -61,7 +62,8 @@ std::vector<CompletedMoveResult> RealTimeArbiter::applyCompletedMoves(GameState&
             result.capturedToken = destinationToken;
             result.survivingToken = token;
         }
-
+        
+        gameState.markVacated(motion.from);
         board.setCell(motion.from.row, motion.from.col, Board::EMPTY_CELL);
         board.setCell(motion.to.row, motion.to.col, token);
         promoteIfNeeded(motion.to, board);

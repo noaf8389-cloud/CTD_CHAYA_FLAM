@@ -111,3 +111,23 @@ bool GameState::isResting(const Position& position) const {
     }
     return false;
 }
+
+bool GameState::wasEverVacated(const Position& position) const {
+    for (const Position& vacated : vacatedSquares_) {
+        if (vacated == position) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool GameState::requestCastling(const Position& kingFrom, const Position& kingTo, const Position& rookFrom, const Position& rookTo) {
+    if (hasPendingMove(kingFrom) || hasPendingMove(rookFrom)) {
+        return false;
+    }
+    long long distance = std::abs(kingFrom.col - kingTo.col);
+    long long completionTime = currentTime_ + distance * MS_PER_CELL;
+    pendingMoves_.push_back(Motion{kingFrom, kingTo, completionTime});
+    pendingMoves_.push_back(Motion{rookFrom, rookTo, completionTime});
+    return true;
+}

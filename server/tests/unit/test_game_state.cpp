@@ -384,3 +384,44 @@ TEST_CASE("two different pieces can have pending moves at the same time") {
     auto completed = gameState.extractCompletedMoves();
     REQUIRE(completed.size() == 2);
 }
+
+TEST_CASE("wasEverVacated is false until markVacated is called") {
+    Board board(3, 3);
+    GameState gameState(board);
+    REQUIRE(gameState.wasEverVacated(Position{0, 0}) == false);
+}
+
+TEST_CASE("markVacated makes wasEverVacated true for that square") {
+    Board board(3, 3);
+    GameState gameState(board);
+    gameState.markVacated(Position{0, 0});
+    REQUIRE(gameState.wasEverVacated(Position{0, 0}));
+}
+
+TEST_CASE("requestCastling queues both king and rook motions with the same completion time") {
+    Board board(8, 8);
+    board.setCell(7, 4, "wK");
+    board.setCell(7, 7, "wR");
+    GameState gameState(board);
+
+    bool queued = gameState.requestCastling(Position{7, 4}, Position{7, 6}, Position{7, 7}, Position{7, 5});
+    REQUIRE(queued);
+
+    auto kingMotion = gameState.getPendingMove(Position{7, 4});
+    auto rookMotion = gameState.getPendingMove(Position{7, 7});
+    REQUIRE(kingMotion.has_value());
+    REQUIRE(rookMotion.has_value());
+    REQUIRE(kingMotion->completionTime == rookMotion->completionTime);
+}
+
+TEST_CASE("requestCastling fails if the king already has a pending move") {
+    Board board(8, 8);
+    board.setCell(7, 4, "wK");
+    board.setCell(7, 7, "wR");
+    GameState gameState(board);
+
+    gameState.requestMove(Position{7, 4}, Position{6, 4});
+    bool queued = gameState.requestCastling(Position{7, 4}, Position{7, 6}, Position{7, 7}, Position{7, 5});
+
+    REQUIRE(queued == false);
+}

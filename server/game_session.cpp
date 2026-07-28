@@ -8,16 +8,13 @@
 void GameSession::handleClick(int row, int col, char actingColor) {
     std::lock_guard lock(mutex_);
 
-    std::optional<Motion> started = Controller::handleClick(row, col, gameState_, actingColor);
-    if (!started.has_value()) {
-        return;
+    std::vector<Motion> started = Controller::handleClick(row, col, gameState_, actingColor);
+    for (const Motion& motion : started) {
+        std::string token = gameState_.getBoard().getCell(motion.from.row, motion.from.col);
+        long long now = gameState_.getCurrentTime();
+        long long duration = motion.completionTime - now;
+        bus_.publish(MoveStartedEvent{motion.from, motion.to, token, duration, now});
     }
-
-    std::string token = gameState_.getBoard().getCell(started->from.row, started->from.col);
-    long long now = gameState_.getCurrentTime();
-    long long duration = started->completionTime - now;
-
-    bus_.publish(MoveStartedEvent{started->from, started->to, token, duration, now});
 }
 
 void GameSession::handleJump(int row, int col, char actingColor) {

@@ -249,53 +249,53 @@ TEST_CASE("handleClick returns the queued motion for a legal move") {
     GameState gameState(board);
 
     Controller::handleClick(0, 0, gameState, 'w');
-    std::optional<Motion> motion = Controller::handleClick(0, 3, gameState, 'w');
+    std::vector<Motion> started = Controller::handleClick(0, 3, gameState, 'w');
 
-    REQUIRE(motion.has_value());
-    REQUIRE(motion->from == Position{0, 0});
-    REQUIRE(motion->to == Position{0, 3});
-    REQUIRE(motion->completionTime == 3 * GameState::MS_PER_CELL);
+    REQUIRE(started.size() == 1);
+    REQUIRE(started[0].from == Position{0, 0});
+    REQUIRE(started[0].to == Position{0, 3});
+    REQUIRE(started[0].completionTime == 3 * GameState::MS_PER_CELL);
 }
 
-TEST_CASE("handleClick returns nullopt when the click only selects a piece") {
+TEST_CASE("handleClick returns nothing when the click only selects a piece") {
     GameState gameState(makeBoardWithPieces());
-    std::optional<Motion> motion = Controller::handleClick(0, 0, gameState, 'w');
-    REQUIRE(motion.has_value() == false);
+    std::vector<Motion> started = Controller::handleClick(0, 0, gameState, 'w');
+    REQUIRE(started.empty());
 }
 
-TEST_CASE("handleClick returns nullopt when the target is illegal") {
+TEST_CASE("handleClick returns nothing when the target is illegal") {
     Board board(4, 4);
     board.setCell(0, 0, "wR");
     GameState gameState(board);
 
     Controller::handleClick(0, 0, gameState, 'w');
-    std::optional<Motion> motion = Controller::handleClick(1, 1, gameState, 'w');
+    std::vector<Motion> started = Controller::handleClick(1, 1, gameState, 'w');
 
-    REQUIRE(motion.has_value() == false);
+    REQUIRE(started.empty());
 }
 
-TEST_CASE("handleClick returns nullopt when clicking the same selected cell again") {
+TEST_CASE("handleClick returns nothing when clicking the same selected cell again") {
     GameState gameState(makeBoardWithPieces());
     Controller::handleClick(0, 0, gameState, 'w');
-    std::optional<Motion> motion = Controller::handleClick(0, 0, gameState, 'w');
-    REQUIRE(motion.has_value() == false);
+    std::vector<Motion> started = Controller::handleClick(0, 0, gameState, 'w');
+    REQUIRE(started.empty());
 }
 
-TEST_CASE("handleClick returns nullopt when clicking outside the board") {
+TEST_CASE("handleClick returns nothing when clicking outside the board") {
     GameState gameState(makeBoardWithPieces());
-    std::optional<Motion> motion = Controller::handleClick(5, 5, gameState, 'w');
-    REQUIRE(motion.has_value() == false);
+    std::vector<Motion> started = Controller::handleClick(5, 5, gameState, 'w');
+    REQUIRE(started.empty());
 }
 
-TEST_CASE("handleClick returns nullopt after the game is over") {
+TEST_CASE("handleClick returns nothing after the game is over") {
     Board board(4, 4);
     board.setCell(0, 0, "wR");
     GameState gameState(board);
     gameState.select('w', Position{0, 0});
     gameState.endGame();
 
-    std::optional<Motion> motion = Controller::handleClick(0, 1, gameState, 'w');
-    REQUIRE(motion.has_value() == false);
+    std::vector<Motion> started = Controller::handleClick(0, 1, gameState, 'w');
+    REQUIRE(started.empty());
 }
 
 TEST_CASE("two colors selecting independently do not interfere with each other") {
@@ -317,4 +317,99 @@ TEST_CASE("a resting piece cannot jump") {
 
     std::optional<Position> result = Controller::handleJump(0, 0, gameState, 'w');
     REQUIRE(result.has_value() == false);
+}
+
+TEST_CASE("clicking the king then two squares over performs castling") {
+    Board board(8, 8);
+    board.setCell(7, 4, "wK");
+    board.setCell(7, 7, "wR");
+    GameState gameState(board);
+
+    Controller::handleClick(7, 4, gameState, 'w');
+    std::vector<Motion> started = Controller::handleClick(7, 6, gameState, 'w');
+
+    REQUIRE(started.size() == 2);
+    REQUIRE(gameState.hasPendingMove(Position{7, 4}));
+    REQUIRE(gameState.hasPendingMove(Position{7, 7}));
+}
+
+TEST_CASE("castling is refused once the king has ever moved") {
+    Board board(8, 8);
+    board.setCell(7, 4, "wK");
+    board.setCell(7, 7, "wR");
+    GameState gameState(board);
+    gameState.markVacated(Position{7, 4});
+
+    Controller::handleClick(7, 4, gameState, 'w');
+    std::vector<Motion> started = Controller::handleClick(7, 6, gameState, 'w');
+
+    REQUIRE(started.empty());
+}
+
+TEST_CASE("castling is refused when the castling rook is resting") {
+    Board board(8, 8);
+    board.setCell(7, 4, "wK");
+    board.setCell(7, 7, "wR");
+    GameState gameState(board);
+    gameState.startLongRest(Position{7, 7});
+
+    Controller::handleClick(7, 4, gameState, 'w');
+    std::vector<Motion> started = Controller::handleClick(7, 6, gameState, 'w');
+
+    REQUIRE(started.empty());
+    REQUIRE(gameState.getSelectedPosition('w').value() == Position{7, 4});
+}
+
+TEST_CASE("castling is refused on the queenside when that rook is resting") {
+    Board board(8, 8);
+    board.setCell(7, 4, "wK");
+    board.setCell(7, 0, "wR");
+    GameState gameState(board);
+    gameState.startLongRest(Position{7, 0});
+
+    Controller::handleClick(7, 4, gameState, 'w');
+    std::vector<Motion> started = Controller::handleClick(7, 2, gameState, 'w');
+
+    REQUIRE(started.empty());
+}
+
+TEST_CASE("castling is still legal when only the other side's rook is resting") {
+    Board board(8, 8);
+    board.setCell(7, 4, "wK");
+    board.setCell(7, 0, "wR");
+    board.setCell(7, 7, "wR");
+    GameState gameState(board);
+    gameState.startLongRest(Position{7, 0});   // queenside rook resting; kingside castling should be unaffected
+
+    Controller::handleClick(7, 4, gameState, 'w');
+    std::vector<Motion> started = Controller::handleClick(7, 6, gameState, 'w');
+
+    REQUIRE(started.size() == 2);
+}
+
+TEST_CASE("castling is refused when the king itself is resting") {
+    Board board(8, 8);
+    board.setCell(7, 4, "wK");
+    board.setCell(7, 7, "wR");
+    GameState gameState(board);
+    gameState.startLongRest(Position{7, 4});
+
+    Controller::handleClick(7, 4, gameState, 'w');
+    std::vector<Motion> started = Controller::handleClick(7, 6, gameState, 'w');
+
+    REQUIRE(started.empty());
+}
+
+TEST_CASE("castling becomes legal again once the rook's rest has expired") {
+    Board board(8, 8);
+    board.setCell(7, 4, "wK");
+    board.setCell(7, 7, "wR");
+    GameState gameState(board);
+    gameState.startLongRest(Position{7, 7});
+    gameState.advanceTime(GameState::LONG_REST_DURATION_MS + 1);
+
+    Controller::handleClick(7, 4, gameState, 'w');
+    std::vector<Motion> started = Controller::handleClick(7, 6, gameState, 'w');
+
+    REQUIRE(started.size() == 2);
 }
