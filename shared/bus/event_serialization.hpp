@@ -42,3 +42,20 @@ inline void from_json(const json& j, ScoreUpdatedEvent& e) {
     j.at("new_score").get_to(e.new_score);
     j.at("timestamp_ms").get_to(e.timestamp_ms);
 }
+
+inline void to_json(json& j, const PlayerDisconnectedEvent& e) {
+    j = json{{"color", std::string(1, e.color)}, {"grace_duration_ms", e.grace_duration_ms}, {"timestamp_ms", e.timestamp_ms}};
+}
+inline void from_json(const json& j, PlayerDisconnectedEvent& e) {
+    e.color = j.at("color").get<std::string>().at(0);
+    j.at("grace_duration_ms").get_to(e.grace_duration_ms);
+    j.at("timestamp_ms").get_to(e.timestamp_ms);
+}
+
+inline void to_json(json& j, const PlayerReconnectedEvent& e) {
+    j = json{{"color", std::string(1, e.color)}, {"timestamp_ms", e.timestamp_ms}};
+}
+inline void from_json(const json& j, PlayerReconnectedEvent& e) {
+    e.color = j.at("color").get<std::string>().at(0);
+    j.at("timestamp_ms").get_to(e.timestamp_ms);
+}

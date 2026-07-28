@@ -8,7 +8,7 @@
 
 namespace fs = std::filesystem;
 
-Controler::Controler(const std::string& asset_root, const std::string& theme, const std::string& username, const std::string& server_url)
+Controler::Controler(const std::string& asset_root, const std::string& theme, const std::string& username, const std::string& password, const std::string& server_url)
     : board_view((fs::path(asset_root) / "board.png").string()),
       piece_assets((fs::path(asset_root) / theme).string()),
       table_layout_(board_view.base().cols, board_view.base().rows),
@@ -18,7 +18,7 @@ Controler::Controler(const std::string& asset_root, const std::string& theme, co
       player_panels_(event_bus_),
       network_receiver_(server_connection_, event_bus_),
       animation_tracker(event_bus_, piece_assets) {
-    server_connection_.setOnOpen([this, username]() { command_sender_.sendLogin(username); });
+    server_connection_.setOnOpen([this, username, password]() { command_sender_.sendLogin(username, password); });
     server_connection_.start();
 }
 

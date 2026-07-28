@@ -244,6 +244,73 @@ TEST_CASE("GameSession::handleJump publishes nothing when the piece belongs to t
     REQUIRE(started.empty());
 }
 
+TEST_CASE("GameSession::forfeit publishes GameOverEvent naming the opponent as winner") {
+    GameState gameState(makeBoardWithRook());
+    EventBus bus;
+    GameSession session(gameState, bus);
+
+    std::vector<GameOverEvent> over;
+    bus.subscribe<GameOverEvent>([&over](const GameOverEvent& e) { over.push_back(e); });
+
+    session.forfeit('w');
+
+    REQUIRE(over.size() == 1);
+    REQUIRE(over[0].winner_color == 'b');
+}
+
+TEST_CASE("GameSession::forfeit ends the game") {
+    GameState gameState(makeBoardWithRook());
+    EventBus bus;
+    GameSession session(gameState, bus);
+
+    session.forfeit('w');
+
+    REQUIRE(gameState.isGameOver());
+}
+
+TEST_CASE("GameSession::forfeit does nothing once the game is already over") {
+    GameState gameState(makeBoardWithRook());
+    EventBus bus;
+    GameSession session(gameState, bus);
+    session.forfeit('w');
+
+    std::vector<GameOverEvent> over;
+    bus.subscribe<GameOverEvent>([&over](const GameOverEvent& e) { over.push_back(e); });
+
+    session.forfeit('b');
+
+    REQUIRE(over.empty());
+}
+
+TEST_CASE("GameSession::playerDisconnected publishes PlayerDisconnectedEvent") {
+    GameState gameState(makeBoardWithRook());
+    EventBus bus;
+    GameSession session(gameState, bus);
+
+    std::vector<PlayerDisconnectedEvent> disconnected;
+    bus.subscribe<PlayerDisconnectedEvent>([&disconnected](const PlayerDisconnectedEvent& e) { disconnected.push_back(e); });
+
+    session.playerDisconnected('b', 20000);
+
+    REQUIRE(disconnected.size() == 1);
+    REQUIRE(disconnected[0].color == 'b');
+    REQUIRE(disconnected[0].grace_duration_ms == 20000);
+}
+
+TEST_CASE("GameSession::playerReconnected publishes PlayerReconnectedEvent") {
+    GameState gameState(makeBoardWithRook());
+    EventBus bus;
+    GameSession session(gameState, bus);
+
+    std::vector<PlayerReconnectedEvent> reconnected;
+    bus.subscribe<PlayerReconnectedEvent>([&reconnected](const PlayerReconnectedEvent& e) { reconnected.push_back(e); });
+
+    session.playerReconnected('b');
+
+    REQUIRE(reconnected.size() == 1);
+    REQUIRE(reconnected[0].color == 'b');
+}
+
 TEST_CASE("GameSession::update publishes JumpLandedEvent once the jump's airborne time elapses") {
     Board board(3, 3);
     board.setCell(1, 1, "wK");

@@ -6,11 +6,11 @@ A real-time chess variant ("KungFu Chess") — pieces move independently and sim
 
 The project is split into two independent programs that communicate only over a WebSocket connection (JSON messages):
 
-- **`server/`** — game logic + networking (`KungFuChessServer.exe`). Owns the board, rules, and real-time timing; publishes game events on a local event bus and broadcasts them as JSON to all connected clients.
+- **`server/`** — game logic + networking (`KungFuChessServer.exe`). Runs any number of concurrent matches: newly logged-in clients are queued and paired by rating (±100 ELO) into independent `GameMatch` instances, each with its own board, rules, real-time timing, and event bus, broadcasting JSON events only to that match's own clients.
 - **`ui/CTD26-main/client/`** — OpenCV graphical client (`KungFuChess.exe`). Renders the board and piece animations, sends click/jump commands to the server, and reacts to server-broadcast events by maintaining its own local copy of the board state.
 - **`shared/`** — code that is genuinely identical on both sides, compiled into both executables from this single location: the board/position data model, the event bus and event definitions/JSON serialization, and the file logger. Anything server- or client-specific (networking, rendering, rules) stays in its own tree, not here.
 
-The server must be running before a client connects. Multiple clients can connect to the same running server and will all see the same board update live.
+The server must be running before a client connects. Clients that log in around the same time and with a similar rating are matched into the same game; clients matched into different games don't see each other's boards. Reconnecting with the same username routes a client back into their still-active match.
 
 ## Prerequisites
 
@@ -84,6 +84,8 @@ logging/     file logger (server.log / client.log)
 server/
 logic/       game rules, board model, real-time arbiter
 network/     WebSocket server, command handling, login, event broadcasting
+matches/     GameMatch (one running match) + GameRegistry (all active matches, by username)
+lobby/       LobbyRegistry (connected/identified players) + Matchmaker (rating-based pairing)
 db/          SQLite-backed player accounts (username/password/rating)
 rating/      ELO calculation + rating updates on game over
 tests/
@@ -100,15 +102,14 @@ layout_standard.txt  default starting board
 ## Status
 
 Implemented:
-- Real-time server-authoritative game state, broadcast live to any number of connected clients
+- Real-time server-authoritative game state, broadcast live to a match's connected clients
 - Full event-driven flow: move/jump/rest/capture/game-over events published on the server and forwarded to clients
-- Per-connection color assignment (`PlayerRegistry`) — each client can only move its own color
+- Per-connection color assignment (`PlayerRegistry`, scoped per match) — each client can only move its own color
 - Username/password login with SQLite-backed accounts and ELO rating, updated automatically on game over
+- Multiple concurrent matches with rating-based matchmaking (±100 ELO), including a no-match-found timeout
+- Disconnect grace period (20s) with auto-forfeit if not resumed in time, and reconnecting into an in-progress match with the same username
 - Castling
-- File logging (`server.log` / `client.log`) for connections, logins, malformed messages, and errors
+- File logging (`server.log` / `client.log`) for connections, logins, matchmaking, malformed messages, and errors
 
 Not yet implemented:
-- Disconnect grace period / auto-resign after a timeout
-- "Play" button with ELO-based matchmaking
-- Multiple concurrent game rooms — the server hosts a single game per process
 - On-screen score, move log, and sound

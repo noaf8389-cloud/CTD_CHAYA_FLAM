@@ -4,6 +4,7 @@
 
 #include "bus/game_events.hpp"
 #include "logic/real_time/real_time_arbiter.hpp"
+#include "logging/logger.hpp"
 
 void GameSession::handleClick(int row, int col, char actingColor) {
     std::lock_guard lock(mutex_);
@@ -75,4 +76,25 @@ GameStartedEvent GameSession::buildGameStartedEvent() const {
         }
     }
     return GameStartedEvent{board.getRowCount(), board.getColCount(), cells, gameState_.getCurrentTime()};
+}
+
+void GameSession::forfeit(char forfeitingColor) {
+    std::lock_guard lock(mutex_);
+    if (gameState_.isGameOver()) {
+        return;
+    }
+    gameState_.endGame();
+    char winner = (forfeitingColor == 'w') ? 'b' : 'w';
+    Logger::info("Forfeit: color " + std::string(1, forfeitingColor) + " timed out, winner=" + std::string(1, winner));
+    bus_.publish(GameOverEvent{winner, gameState_.getCurrentTime()});
+}
+
+void GameSession::playerDisconnected(char color, long long graceDurationMs) {
+    std::lock_guard lock(mutex_);
+    bus_.publish(PlayerDisconnectedEvent{color, graceDurationMs, gameState_.getCurrentTime()});
+}
+
+void GameSession::playerReconnected(char color) {
+    std::lock_guard lock(mutex_);
+    bus_.publish(PlayerReconnectedEvent{color, gameState_.getCurrentTime()});
 }

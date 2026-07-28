@@ -40,6 +40,12 @@ NetworkPublisher::NetworkPublisher(EventBus& bus, GameSession& gameSession) : bu
     bus_.subscribe<RestEndedEvent>([this](const RestEndedEvent& e) {
         broadcast(envelope("RestEndedEvent", e));
     });
+    bus_.subscribe<PlayerDisconnectedEvent>([this](const PlayerDisconnectedEvent& e) {
+        broadcast(envelope("PlayerDisconnectedEvent", e));
+    });
+    bus_.subscribe<PlayerReconnectedEvent>([this](const PlayerReconnectedEvent& e) {
+        broadcast(envelope("PlayerReconnectedEvent", e));
+    });
 }
 
 void NetworkPublisher::addConnection(std::shared_ptr<ix::WebSocket> connection) {

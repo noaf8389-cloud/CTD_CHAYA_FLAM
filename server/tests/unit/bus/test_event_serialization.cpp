@@ -94,6 +94,31 @@ TEST_CASE("JumpStartedEvent round-trips through JSON") {
     REQUIRE(restored.timestamp_ms == original.timestamp_ms);
 }
 
+TEST_CASE("PlayerDisconnectedEvent serializes color as a JSON string, not a number") {
+    PlayerDisconnectedEvent original{'w', 20000, 500};
+    json j = original;
+
+    REQUIRE(j.at("color").is_string());
+    REQUIRE(j.at("color").get<std::string>() == "w");
+
+    PlayerDisconnectedEvent restored = j.get<PlayerDisconnectedEvent>();
+    REQUIRE(restored.color == 'w');
+    REQUIRE(restored.grace_duration_ms == 20000);
+    REQUIRE(restored.timestamp_ms == 500);
+}
+
+TEST_CASE("PlayerReconnectedEvent serializes color as a JSON string, not a number") {
+    PlayerReconnectedEvent original{'b', 700};
+    json j = original;
+
+    REQUIRE(j.at("color").is_string());
+    REQUIRE(j.at("color").get<std::string>() == "b");
+
+    PlayerReconnectedEvent restored = j.get<PlayerReconnectedEvent>();
+    REQUIRE(restored.color == 'b');
+    REQUIRE(restored.timestamp_ms == 700);
+}
+
 TEST_CASE("JumpLandedEvent round-trips through JSON") {
     JumpLandedEvent original{Position{1, 1}, "wK", 1500};
     json j = original;

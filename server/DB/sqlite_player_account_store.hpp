@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include "player_account_store.hpp"
 
 struct sqlite3;
@@ -19,4 +21,7 @@ private:
     void createTableIfMissing();
 
     sqlite3* db_;
+    // Guards db_: sqlite3_open() without SQLITE_OPEN_FULLMUTEX is not safe for
+    // concurrent access from multiple connections' callback threads.
+    mutable std::mutex mutex_;
 };

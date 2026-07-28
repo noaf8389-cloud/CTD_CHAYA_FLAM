@@ -1,3 +1,5 @@
+// https://github.com/noaf8389-cloud/CTD_CHAYA_FLAM.git
+
 #include "game/controler.hpp"
 #include <windows.h>
 #include <iostream>
@@ -10,8 +12,12 @@ int main() {
         std::cout << "Username: ";
         std::cin >> username;
 
+        std::string password;
+        std::cout << "Password: ";
+        std::cin >> password;
+
         Logger::init("client.log");
-        Controler("../..", "pieces3", username).run();
+        Controler("../..", "pieces3", username, password).run();
         return 0;
     }
     catch (const std::exception& e) {

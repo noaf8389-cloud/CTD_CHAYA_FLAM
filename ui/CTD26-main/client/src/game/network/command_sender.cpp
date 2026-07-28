@@ -12,7 +12,7 @@ void CommandSender::send(const char* command, int row, int col) {
     connection_.send(message.dump());
 }
 
-void CommandSender::sendLogin(const std::string& username) {
-    json message{{"command", "login"}, {"username", username}};
+void CommandSender::sendLogin(const std::string& username, const std::string& password) {
+    json message{{"command", "login"}, {"username", username}, {"password", password}};
     connection_.send(message.dump());
 }

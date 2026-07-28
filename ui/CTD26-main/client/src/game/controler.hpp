@@ -18,7 +18,7 @@
 class Controler {
 public:
     // Loads piece assets and connects to the server at server_url; the board itself arrives via GameStartedEvent.
-    Controler(const std::string& asset_root, const std::string& theme, const std::string& username, const std::string& server_url = "ws://127.0.0.1:8080");
+    Controler(const std::string& asset_root, const std::string& theme, const std::string& username, const std::string& password, const std::string& server_url = "ws://127.0.0.1:8080");
     void run();
 
 

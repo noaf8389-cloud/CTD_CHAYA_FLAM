@@ -16,7 +16,7 @@ public:
         send("jump", row, col);
     }
 
-    void sendLogin(const std::string& username);
+    void sendLogin(const std::string& username, const std::string& password);
 
 private:
       void send(const char* command, int row, int col);

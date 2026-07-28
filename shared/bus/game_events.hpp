@@ -63,3 +63,14 @@ struct RestEndedEvent {
     std::string piece_token;
     long long timestamp_ms;
 };
+
+struct PlayerDisconnectedEvent {
+    char color;
+    long long grace_duration_ms;
+    long long timestamp_ms;
+};
+
+struct PlayerReconnectedEvent {
+    char color;
+    long long timestamp_ms;
+};

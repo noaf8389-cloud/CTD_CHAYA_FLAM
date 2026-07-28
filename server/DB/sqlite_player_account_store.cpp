@@ -35,6 +35,8 @@ void SqlitePlayerAccountStore::createTableIfMissing() {
 }
 
 LoginResult SqlitePlayerAccountStore::loginOrRegister(const std::string& username, const std::string& password) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
     sqlite3_stmt* statement = nullptr;
     sqlite3_prepare_v2(db_, "SELECT salt, password_hash, rating FROM players WHERE username = ?;", -1, &statement, nullptr);
     sqlite3_bind_text(statement, 1, username.c_str(), -1, SQLITE_TRANSIENT);
@@ -66,6 +68,8 @@ LoginResult SqlitePlayerAccountStore::loginOrRegister(const std::string& usernam
 }
 
 void SqlitePlayerAccountStore::updateRating(const std::string& username, int newRating) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
     sqlite3_stmt* statement = nullptr;
     sqlite3_prepare_v2(db_, "UPDATE players SET rating = ? WHERE username = ?;", -1, &statement, nullptr);
     sqlite3_bind_int(statement, 1, newRating);
@@ -75,6 +79,8 @@ void SqlitePlayerAccountStore::updateRating(const std::string& username, int new
 }
 
 std::optional<int> SqlitePlayerAccountStore::ratingFor(const std::string& username) const {
+    std::lock_guard<std::mutex> lock(mutex_);
+
     sqlite3_stmt* statement = nullptr;
     sqlite3_prepare_v2(db_, "SELECT rating FROM players WHERE username = ?;", -1, &statement, nullptr);
     sqlite3_bind_text(statement, 1, username.c_str(), -1, SQLITE_TRANSIENT);
