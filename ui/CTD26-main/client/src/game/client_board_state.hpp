@@ -19,6 +19,9 @@ public:
     // Returns true once a GameOverEvent has been received.
     bool is_game_over() const;
 
+    // Valid only once is_game_over() is true. 'w' or 'b'.
+    char winner_color() const;
+
 private:
     void onGameStarted(const GameStartedEvent& event);
     void onMoveMade(const MoveMadeEvent& event);
@@ -28,4 +31,5 @@ private:
     mutable std::mutex mutex_;
     Board board_{0, 0};
     bool game_over_ = false;
+    char winner_color_ = ' ';
 };

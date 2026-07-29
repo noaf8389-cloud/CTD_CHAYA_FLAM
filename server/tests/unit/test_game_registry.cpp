@@ -143,3 +143,94 @@ TEST_CASE("matchFor keys by username, not by any transient connection — safe a
 
     REQUIRE(first == second);
 }
+
+TEST_CASE("createRoom returns a code that joinRoom can use to find the same match") {
+    FakeAccountStore accounts;
+    GameRegistry registry;
+    GameRegistry::RoomCode code = registry.createRoom(makeBoardWithRook(), accounts, "alice");
+
+    GameMatch* match = registry.joinRoom(code, "bob");
+
+    REQUIRE(match != nullptr);
+    REQUIRE(match == registry.matchFor("alice"));
+}
+
+TEST_CASE("joinRoom returns nullptr for an unknown room code") {
+    FakeAccountStore accounts;
+    GameRegistry registry;
+    REQUIRE(registry.joinRoom("NOSUCH", "bob") == nullptr);
+}
+
+TEST_CASE("joinRoom registers the joiner's username so matchFor finds the match too") {
+    FakeAccountStore accounts;
+    GameRegistry registry;
+    GameRegistry::RoomCode code = registry.createRoom(makeBoardWithRook(), accounts, "alice");
+
+    registry.joinRoom(code, "bob");
+
+    REQUIRE(registry.matchFor("bob") == registry.matchFor("alice"));
+}
+
+TEST_CASE("a room accepts more than two joiners (spectators)") {
+    FakeAccountStore accounts;
+    GameRegistry registry;
+    GameRegistry::RoomCode code = registry.createRoom(makeBoardWithRook(), accounts, "alice");
+
+    registry.joinRoom(code, "bob");
+    GameMatch* asSpectator = registry.joinRoom(code, "carol");
+
+    REQUIRE(asSpectator != nullptr);
+    REQUIRE(asSpectator == registry.matchFor("alice"));
+}
+
+TEST_CASE("createRoom produces a distinct code for each room") {
+    FakeAccountStore accounts;
+    GameRegistry registry;
+    GameRegistry::RoomCode first = registry.createRoom(makeBoardWithRook(), accounts, "alice");
+    GameRegistry::RoomCode second = registry.createRoom(makeBoardWithRook(), accounts, "carol");
+
+    REQUIRE(first != second);
+}
+
+TEST_CASE("a room's code stops resolving once its match ends and is pruned") {
+    FakeAccountStore accounts;
+    GameRegistry registry;
+    GameRegistry::RoomCode code = registry.createRoom(makeBoardWithCapturableKing(), accounts, "alice");
+    registry.joinRoom(code, "bob");
+
+    registry.matchFor("alice")->handleMessage(R"({"command":"click","row":0,"col":0})", 'w');
+    registry.matchFor("alice")->handleMessage(R"({"command":"click","row":0,"col":3})", 'w');
+    registry.updateAll(100000);
+
+    REQUIRE(registry.joinRoom(code, "dave") == nullptr);
+}
+
+TEST_CASE("matchFor for a room joiner (not the creator) also returns nullptr once the match has ended and been pruned") {
+    FakeAccountStore accounts;
+    GameRegistry registry;
+    GameRegistry::RoomCode code = registry.createRoom(makeBoardWithCapturableKing(), accounts, "alice");
+    registry.joinRoom(code, "bob");
+
+    registry.matchFor("alice")->handleMessage(R"({"command":"click","row":0,"col":0})", 'w');
+    registry.matchFor("alice")->handleMessage(R"({"command":"click","row":0,"col":3})", 'w');
+    registry.updateAll(100000);
+
+    REQUIRE(registry.matchFor("bob") == nullptr);
+}
+
+TEST_CASE("createRoom alone, with no joiner yet, still creates a trackable match") {
+    FakeAccountStore accounts;
+    GameRegistry registry;
+    registry.createRoom(makeBoardWithRook(), accounts, "alice");
+
+    REQUIRE(registry.matchFor("alice") != nullptr);
+    REQUIRE(registry.matchCount() == 1);
+}
+
+TEST_CASE("createRoom produces a 6-character code") {
+    FakeAccountStore accounts;
+    GameRegistry registry;
+    GameRegistry::RoomCode code = registry.createRoom(makeBoardWithRook(), accounts, "alice");
+
+    REQUIRE(code.size() == 6);
+}

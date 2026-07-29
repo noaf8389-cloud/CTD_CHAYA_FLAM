@@ -65,8 +65,12 @@ void NetworkPublisher::removeConnection(ix::WebSocket* connection) {
 }
 
 void NetworkPublisher::broadcast(const std::string& message) {
-    std::lock_guard lock(connectionsMutex_);
-    for (auto& connection : connections_) {
+    std::vector<std::shared_ptr<ix::WebSocket>> snapshot;
+    {
+        std::lock_guard lock(connectionsMutex_);
+        snapshot = connections_;
+    }
+    for (auto& connection : snapshot) {
         connection->send(message);
     }
 }

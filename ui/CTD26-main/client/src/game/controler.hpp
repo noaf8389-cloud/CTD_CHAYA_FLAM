@@ -10,6 +10,7 @@
 #include "client_board_state.hpp"
 #include "player_panel_tracker.hpp"
 #include "piece_code.hpp"
+#include "room_dialog.hpp"
 #include <chrono>
 #include <optional>
 #include <string>
@@ -18,7 +19,9 @@
 class Controler {
 public:
     // Loads piece assets and connects to the server at server_url; the board itself arrives via GameStartedEvent.
-    Controler(const std::string& asset_root, const std::string& theme, const std::string& username, const std::string& password, const std::string& server_url = "ws://127.0.0.1:8080");
+    // matchChoice is sent to the server once login succeeds (findMatch/createRoom/joinRoom).
+    Controler(const std::string& asset_root, const std::string& theme, const std::string& username, const std::string& password,
+              MatchChoice matchChoice, const std::string& server_url = "ws://127.0.0.1:8080");
     void run();
 
 
@@ -35,7 +38,10 @@ private:
     std::optional<cv::Point> window_to_image_point(int window_x, int window_y) const;
     void handle_click(int window_x, int window_y);
     void handle_jump(int window_x, int window_y);
+    // Sends the command matching match_choice_.intent once login has succeeded.
+    void send_match_intent();
 
+    MatchChoice match_choice_;
     BoardView board_view;
     PieceAssets piece_assets;
     TableLayout table_layout_;

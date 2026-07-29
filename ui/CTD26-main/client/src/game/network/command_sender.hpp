@@ -17,6 +17,9 @@ public:
     }
 
     void sendLogin(const std::string& username, const std::string& password);
+    void sendFindMatch();
+    void sendCreateRoom();
+    void sendJoinRoom(const std::string& roomCode);
 
 private:
       void send(const char* command, int row, int col);

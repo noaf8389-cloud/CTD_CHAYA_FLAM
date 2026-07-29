@@ -16,6 +16,10 @@ NetworkReceiver::NetworkReceiver(ServerConnection& connection, EventBus& bus) : 
     handlers_["JumpStartedEvent"] = [this](const json& payload) { bus_.publish(payload.get<JumpStartedEvent>()); };
     handlers_["JumpLandedEvent"] = [this](const json& payload) { bus_.publish(payload.get<JumpLandedEvent>()); };
     handlers_["RestEndedEvent"] = [this](const json& payload) { bus_.publish(payload.get<RestEndedEvent>()); };
+    handlers_["LoginResultEvent"] = [this](const json& p) { bus_.publish(LoginResultReceived{p.value("success", false), p.value("rating", 0)}); };
+    handlers_["RoomCreatedEvent"] = [this](const json& p) { bus_.publish(RoomCreatedReceived{p.value("roomCode", "")}); };
+    handlers_["JoinRoomFailedEvent"] = [this](const json&) { bus_.publish(JoinRoomFailedReceived{}); };
+    handlers_["NoMatchFoundEvent"] = [this](const json&) { bus_.publish(NoMatchFoundReceived{}); };
 
     connection.setOnMessage([this](const std::string& raw) { handleMessage(raw); });
 }

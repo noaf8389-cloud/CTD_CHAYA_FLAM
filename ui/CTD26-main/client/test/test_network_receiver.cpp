@@ -55,3 +55,58 @@ TEST(network_receiver_ignores_message_without_payload) {
 
     EXPECT_TRUE(made.empty());
 }
+
+TEST(network_receiver_dispatches_login_result_event) {
+    EventBus bus;
+    ServerConnection connection("ws://localhost:1");
+    NetworkReceiver receiver(connection, bus);
+
+    std::vector<LoginResultReceived> results;
+    bus.subscribe<LoginResultReceived>([&results](const LoginResultReceived& e) { results.push_back(e); });
+
+    receiver.handleMessage(R"({"type":"LoginResultEvent","payload":{"success":true,"rating":1300}})");
+
+    EXPECT_EQ(results.size(), size_t(1));
+    EXPECT_TRUE(results[0].success);
+    EXPECT_EQ(results[0].rating, 1300);
+}
+
+TEST(network_receiver_dispatches_room_created_event) {
+    EventBus bus;
+    ServerConnection connection("ws://localhost:1");
+    NetworkReceiver receiver(connection, bus);
+
+    std::vector<RoomCreatedReceived> created;
+    bus.subscribe<RoomCreatedReceived>([&created](const RoomCreatedReceived& e) { created.push_back(e); });
+
+    receiver.handleMessage(R"({"type":"RoomCreatedEvent","payload":{"roomCode":"ABC123"}})");
+
+    EXPECT_EQ(created.size(), size_t(1));
+    EXPECT_EQ(created[0].roomCode, std::string("ABC123"));
+}
+
+TEST(network_receiver_dispatches_join_room_failed_event) {
+    EventBus bus;
+    ServerConnection connection("ws://localhost:1");
+    NetworkReceiver receiver(connection, bus);
+
+    int callCount = 0;
+    bus.subscribe<JoinRoomFailedReceived>([&callCount](const JoinRoomFailedReceived&) { callCount++; });
+
+    receiver.handleMessage(R"({"type":"JoinRoomFailedEvent","payload":{}})");
+
+    EXPECT_EQ(callCount, 1);
+}
+
+TEST(network_receiver_dispatches_no_match_found_event) {
+    EventBus bus;
+    ServerConnection connection("ws://localhost:1");
+    NetworkReceiver receiver(connection, bus);
+
+    int callCount = 0;
+    bus.subscribe<NoMatchFoundReceived>([&callCount](const NoMatchFoundReceived&) { callCount++; });
+
+    receiver.handleMessage(R"({"type":"NoMatchFoundEvent","payload":{}})");
+
+    EXPECT_EQ(callCount, 1);
+}

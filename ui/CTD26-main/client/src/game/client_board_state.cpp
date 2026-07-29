@@ -44,4 +44,10 @@ void ClientBoardState::onPieceCaptured(const PieceCapturedEvent& event) {
 void ClientBoardState::onGameOver(const GameOverEvent& event) {
     std::lock_guard<std::mutex> lock(mutex_);
     game_over_ = true;
+    winner_color_ = event.winner_color;
+}
+
+char ClientBoardState::winner_color() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return winner_color_;
 }

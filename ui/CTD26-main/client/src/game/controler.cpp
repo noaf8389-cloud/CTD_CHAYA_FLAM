@@ -3,13 +3,16 @@
 #define NOMINMAX
 #include <windows.h>
 #include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <tuple>
 
 namespace fs = std::filesystem;
 
-Controler::Controler(const std::string& asset_root, const std::string& theme, const std::string& username, const std::string& password, const std::string& server_url)
-    : board_view((fs::path(asset_root) / "board.png").string()),
+Controler::Controler(const std::string& asset_root, const std::string& theme, const std::string& username, const std::string& password,
+                      MatchChoice matchChoice, const std::string& server_url)
+    : match_choice_(std::move(matchChoice)),
+      board_view((fs::path(asset_root) / "board.png").string()),
       piece_assets((fs::path(asset_root) / theme).string()),
       table_layout_(board_view.base().cols, board_view.base().rows),
       server_connection_(server_url),
@@ -18,6 +21,24 @@ Controler::Controler(const std::string& asset_root, const std::string& theme, co
       player_panels_(event_bus_),
       network_receiver_(server_connection_, event_bus_),
       animation_tracker(event_bus_, piece_assets) {
+    event_bus_.subscribe<LoginResultReceived>([this](const LoginResultReceived& e) {
+        if (e.success) {
+            send_match_intent();
+        } else {
+            MessageBoxA(nullptr, "Invalid username or password.", "KungFu Chess", MB_OK | MB_ICONERROR);
+            std::exit(1);
+        }
+    });
+    event_bus_.subscribe<RoomCreatedReceived>([](const RoomCreatedReceived& e) {
+        MessageBoxA(nullptr, ("Your room code: " + e.roomCode).c_str(), "KungFu Chess", MB_OK | MB_ICONINFORMATION);
+    });
+    event_bus_.subscribe<JoinRoomFailedReceived>([](const JoinRoomFailedReceived&) {
+        MessageBoxA(nullptr, "That room code wasn't found.", "KungFu Chess", MB_OK | MB_ICONWARNING);
+    });
+    event_bus_.subscribe<NoMatchFoundReceived>([](const NoMatchFoundReceived&) {
+        MessageBoxA(nullptr, "No match found. Try again.", "KungFu Chess", MB_OK | MB_ICONWARNING);
+    });
+
     server_connection_.setOnOpen([this, username, password]() { command_sender_.sendLogin(username, password); });
     server_connection_.start();
 }
@@ -49,7 +70,24 @@ cv::Mat Controler::render_frame() {
         }
     }
 
-    return table_layout_.render(board_frame, player_panels_.black(), player_panels_.white());
+    cv::Mat frame = table_layout_.render(board_frame, player_panels_.black(), player_panels_.white());
+
+    if (client_board_state_.is_game_over()) {
+        std::string winner = (client_board_state_.winner_color() == 'w') ? "White" : "Black";
+        std::string text = "Game Over - " + winner + " wins!";
+
+        int baseline = 0;
+        double fontScale = 1.2;
+        int thickness = 2;
+        cv::Size textSize = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, fontScale, thickness, &baseline);
+        cv::Point textOrigin((frame.cols - textSize.width) / 2, frame.rows / 2);
+
+        cv::Rect banner(textOrigin.x - 20, textOrigin.y - textSize.height - 20, textSize.width + 40, textSize.height + 40);
+        cv::rectangle(frame, banner, cv::Scalar(20, 20, 20), cv::FILLED);
+        cv::putText(frame, text, textOrigin, cv::FONT_HERSHEY_SIMPLEX, fontScale, cv::Scalar(255, 255, 255), thickness);
+    }
+
+    return frame;
 }
 
 void Controler::run() {
@@ -110,6 +148,14 @@ void Controler::handle_click(int window_x, int window_y) {
     
     auto [row, col] = board_view.pixel_to_cell(image_point->x, image_point->y);
     command_sender_.sendClick(row, col);
+}
+
+void Controler::send_match_intent() {
+    switch (match_choice_.intent) {
+        case MatchIntent::CreateRoom: command_sender_.sendCreateRoom(); break;
+        case MatchIntent::JoinRoom:   command_sender_.sendJoinRoom(*match_choice_.roomCode); break;
+        case MatchIntent::FindMatch:  command_sender_.sendFindMatch(); break;
+    }
 }
 
 std::optional<cv::Point> Controler::window_to_image_point(int window_x, int window_y) const {

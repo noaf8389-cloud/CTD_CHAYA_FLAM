@@ -128,6 +128,78 @@ TEST_CASE("GameSession::update publishes GameOverEvent when a king is captured")
     REQUIRE(over[0].winner_color == 'w');
 }
 
+TEST_CASE("GameSession::update publishes ScoreUpdatedEvent with the captured piece's value") {
+    Board board(4, 4);
+    board.setCell(0, 0, "wR");
+    board.setCell(0, 3, "bP");
+    GameState gameState(board);
+    EventBus bus;
+    GameSession session(gameState, bus);
+
+    std::vector<ScoreUpdatedEvent> scores;
+    bus.subscribe<ScoreUpdatedEvent>([&scores](const ScoreUpdatedEvent& e) { scores.push_back(e); });
+
+    session.handleClick(0, 0, 'w');
+    session.handleClick(0, 3, 'w');
+    session.update(100000);
+
+    REQUIRE(scores.size() == 1);
+    REQUIRE(scores[0].color == 'w');
+    REQUIRE(scores[0].new_score == 1);   // pawn = 1
+}
+
+TEST_CASE("GameSession::update accumulates score across multiple captures by the same color") {
+    Board board(4, 4);
+    board.setCell(0, 0, "wR");
+    board.setCell(0, 2, "bP");
+    board.setCell(0, 3, "bN");
+    GameState gameState(board);
+    EventBus bus;
+    GameSession session(gameState, bus);
+
+    std::vector<ScoreUpdatedEvent> scores;
+    bus.subscribe<ScoreUpdatedEvent>([&scores](const ScoreUpdatedEvent& e) { scores.push_back(e); });
+
+    session.handleClick(0, 0, 'w');
+    session.handleClick(0, 2, 'w');   // captures bP (1)
+    session.update(100000);
+    session.update(100000);          // let the rest period from the first move expire
+    session.handleClick(0, 2, 'w');
+    session.handleClick(0, 3, 'w');   // captures bN (3)
+    session.update(100000);
+
+    REQUIRE(scores.size() == 2);
+    REQUIRE(scores[0].new_score == 1);
+    REQUIRE(scores[1].new_score == 4);
+}
+
+TEST_CASE("GameSession::update tracks each color's score independently") {
+    Board board(4, 4);
+    board.setCell(0, 0, "wR");
+    board.setCell(3, 0, "bR");
+    board.setCell(0, 3, "bP");
+    board.setCell(3, 3, "wP");
+    GameState gameState(board);
+    EventBus bus;
+    GameSession session(gameState, bus);
+
+    std::vector<ScoreUpdatedEvent> scores;
+    bus.subscribe<ScoreUpdatedEvent>([&scores](const ScoreUpdatedEvent& e) { scores.push_back(e); });
+
+    session.handleClick(0, 0, 'w');
+    session.handleClick(0, 3, 'w');   // white captures bP (1)
+    session.update(100000);
+    session.handleClick(3, 0, 'b');
+    session.handleClick(3, 3, 'b');   // black captures wP (1)
+    session.update(100000);
+
+    REQUIRE(scores.size() == 2);
+    REQUIRE(scores[0].color == 'w');
+    REQUIRE(scores[0].new_score == 1);
+    REQUIRE(scores[1].color == 'b');
+    REQUIRE(scores[1].new_score == 1);
+}
+
 TEST_CASE("GameSession::update publishes nothing when there is no pending move") {
     GameState gameState(makeBoardWithRook());
     EventBus bus;

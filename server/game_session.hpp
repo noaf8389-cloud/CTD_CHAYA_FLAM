@@ -34,4 +34,6 @@ private:
     GameState& gameState_;
     EventBus& bus_;
     mutable std::recursive_mutex mutex_;
+    int whiteScore_ = 0;
+    int blackScore_ = 0;
 };

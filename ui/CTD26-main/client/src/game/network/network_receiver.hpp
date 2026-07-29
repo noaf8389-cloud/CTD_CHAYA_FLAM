@@ -9,6 +9,19 @@
 class ServerConnection;
 class EventBus;
 
+// Local, client-only responses to the login/matchmaking commands. Unlike the
+// other events here, the server sends these directly to one connection rather
+// than broadcasting them through a match's event bus, so they aren't shared.
+struct LoginResultReceived {
+    bool success;
+    int rating;
+};
+struct RoomCreatedReceived {
+    std::string roomCode;
+};
+struct JoinRoomFailedReceived {};
+struct NoMatchFoundReceived {};
+
 class NetworkReceiver {
 public:
     NetworkReceiver(ServerConnection& connection, EventBus& bus);

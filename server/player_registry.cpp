@@ -58,7 +58,7 @@ std::optional<std::string> PlayerRegistry::usernameForColor(char color) const {
 }
 
 void PlayerRegistry::beginDisconnectGrace(PlayerId id, long long graceDurationMs) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     auto it = assignments_.find(id);
     if (it == assignments_.end()) {
         return;
@@ -75,13 +75,18 @@ void PlayerRegistry::beginDisconnectGrace(PlayerId id, long long graceDurationMs
         std::chrono::steady_clock::now() + std::chrono::milliseconds(graceDurationMs)
     });
     assignments_.erase(it);
+
+    // Unlocked before firing: onDisconnect_ publishes a bus event that broadcasts
+    // over the network, which shouldn't hold up unrelated calls into this registry
+    // (e.g. another connection resolving its color) for the duration of the send.
+    lock.unlock();
     if (onDisconnect_) {
         onDisconnect_(color, graceDurationMs);
     }
 }
 
 bool PlayerRegistry::tryResumeSession(PlayerId newId, const std::string& username) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
     for (size_t i = 0; i < pendingDisconnects_.size(); ++i) {
         if (pendingDisconnects_[i].username == username) {
             char resumedColor = pendingDisconnects_[i].color;
@@ -95,6 +100,9 @@ bool PlayerRegistry::tryResumeSession(PlayerId newId, const std::string& usernam
                 availableColors_.push_back(existing->second.color);
             }
             assignments_[newId] = PlayerInfo{resumedColor, username};
+
+            // Unlocked before firing, for the same reason as in beginDisconnectGrace above.
+            lock.unlock();
             if (onReconnect_) {
                 onReconnect_(resumedColor);
             }

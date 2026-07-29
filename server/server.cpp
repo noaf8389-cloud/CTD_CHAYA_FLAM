@@ -36,7 +36,7 @@ int Server::run() {
     GameRegistry gameRegistry;
     Matchmaker matchmaker(gameRegistry, accounts, templateBoard);
 
-    GameWebSocketServer webSocketServer(port_, lobbyRegistry, gameRegistry, matchmaker, accounts);
+    GameWebSocketServer webSocketServer(port_, lobbyRegistry, gameRegistry, matchmaker, accounts, std::move(templateBoard));
 
     if (!webSocketServer.start()) {
         return 1;

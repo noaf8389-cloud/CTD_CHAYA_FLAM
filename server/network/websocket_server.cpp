@@ -1,11 +1,14 @@
 #include "websocket_server.hpp"
 
 #include <iostream>
+#include <utility>
+#include <vector>
 
 #include "login_message.hpp"
 #include "../matches/game_match.hpp"
 #include "../third_party/nlohmann/json.hpp"
 #include "logging/logger.hpp"
+#include "room_message.hpp"
 
 using json = nlohmann::json;
 
@@ -14,18 +17,23 @@ namespace {
 }
 
 GameWebSocketServer::GameWebSocketServer(int port, LobbyRegistry& lobbyRegistry, GameRegistry& gameRegistry,
-                                          Matchmaker& matchmaker, PlayerAccountStore& accounts)
-    : server_(port, "0.0.0.0"), lobbyRegistry_(lobbyRegistry), gameRegistry_(gameRegistry),
-      matchmaker_(matchmaker), accounts_(accounts) {
+                                          Matchmaker& matchmaker, PlayerAccountStore& accounts, Board templateBoard)
+    : lobbyRegistry_(lobbyRegistry), gameRegistry_(gameRegistry),
+      matchmaker_(matchmaker), accounts_(accounts), templateBoard_(std::move(templateBoard)),
+      server_(port, "0.0.0.0") {
     matchmaker_.setOnNoMatchFound([this](const std::string& username) {
-        std::lock_guard<std::mutex> lock(connectionsMutex_);
-        auto it = waitingByUsername_.find(username);
-        if (it == waitingByUsername_.end()) return;
+        ix::WebSocket* socket = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(connectionsMutex_);
+            auto it = waitingByUsername_.find(username);
+            if (it == waitingByUsername_.end()) return;
+            socket = it->second;
+            waitingByUsername_.erase(it);
+        }
 
         json response;
         response["type"] = "NoMatchFoundEvent";
-        it->second->send(response.dump());
-        waitingByUsername_.erase(it);
+        socket->send(response.dump());
         Logger::info("No match found for username=" + username);
     });
 
@@ -43,19 +51,42 @@ GameWebSocketServer::GameWebSocketServer(int port, LobbyRegistry& lobbyRegistry,
 
             {
                 std::lock_guard<std::mutex> lock(connectionsMutex_);
-                connections_[rawConnection] = ConnectionState{lobbyId, webSocket, std::nullopt, nullptr, 0};
+                connections_[rawConnection] = std::make_shared<ConnectionState>(
+                    ConnectionState{lobbyId, webSocket, std::nullopt, nullptr, 0});
             }
 
             webSocket->setOnMessageCallback(
                 [this, rawConnection](const ix::WebSocketMessagePtr& message) {
                     if (message->type == ix::WebSocketMessageType::Message) {
-                        std::lock_guard<std::mutex> lock(connectionsMutex_);
-                        auto it = connections_.find(rawConnection);
-                        if (it == connections_.end()) return;
-                        ConnectionState& state = it->second;
+                        // Only the map lookup happens under the lock; a stable shared_ptr
+                        // copy lets the actual handling (DB access, matchmaking, network
+                        // sends) run without blocking every other connection's messages.
+                        std::shared_ptr<ConnectionState> statePtr;
+                        {
+                            std::lock_guard<std::mutex> lock(connectionsMutex_);
+                            auto it = connections_.find(rawConnection);
+                            if (it == connections_.end()) return;
+                            statePtr = it->second;
+                        }
+                        ConnectionState& state = *statePtr;
 
                         if (auto request = parseLoginRequest(message->str)) {
                             handleLogin(rawConnection, state, *request);
+                            return;
+                        }
+
+                        if (parseCreateRoomRequest(message->str)) {
+                            handleCreateRoom(state);
+                            return;
+                        }
+
+                        if (auto joinRequest = parseJoinRoomRequest(message->str)) {
+                            handleJoinRoom(state, *joinRequest);
+                            return;
+                        }
+
+                        if (parseFindMatchRequest(message->str)) {
+                            handleFindMatch(rawConnection, state);
                             return;
                         }
 
@@ -67,11 +98,15 @@ GameWebSocketServer::GameWebSocketServer(int port, LobbyRegistry& lobbyRegistry,
                             }
                         }
                     } else if (message->type == ix::WebSocketMessageType::Close) {
-                        std::lock_guard<std::mutex> lock(connectionsMutex_);
-                        auto it = connections_.find(rawConnection);
-                        if (it == connections_.end()) return;
-                        handleClose(rawConnection, it->second);
-                        connections_.erase(it);
+                        std::shared_ptr<ConnectionState> statePtr;
+                        {
+                            std::lock_guard<std::mutex> lock(connectionsMutex_);
+                            auto it = connections_.find(rawConnection);
+                            if (it == connections_.end()) return;
+                            statePtr = it->second;
+                            connections_.erase(it);
+                        }
+                        handleClose(rawConnection, *statePtr);
                     }
                 });
         });
@@ -89,10 +124,6 @@ void GameWebSocketServer::handleLogin(ix::WebSocket* rawConnection, ConnectionSt
         if (existingMatch != nullptr) {
             attachToMatch(state, existingMatch, /*isResume=*/true);
             Logger::info("Session resumed: username=" + request.username);
-        } else {
-            matchmaker_.enqueue(request.username, result.rating);
-            waitingByUsername_[request.username] = rawConnection;
-            Logger::info("Enqueued for matchmaking: username=" + request.username + " rating=" + std::to_string(result.rating));
         }
     }
 
@@ -100,6 +131,48 @@ void GameWebSocketServer::handleLogin(ix::WebSocket* rawConnection, ConnectionSt
     response["type"] = "LoginResultEvent";
     response["payload"] = {{"success", result.success}, {"rating", result.rating}};
     state.socket->send(response.dump());
+}
+
+void GameWebSocketServer::handleCreateRoom(ConnectionState& state) {
+    if (!state.username.has_value() || state.match != nullptr) return;
+
+    matchmaker_.dequeue(*state.username);
+    waitingByUsername_.erase(*state.username);
+
+    GameRegistry::RoomCode code = gameRegistry_.createRoom(templateBoard_, accounts_, *state.username);
+    attachToMatch(state, gameRegistry_.matchFor(*state.username), /*isResume=*/false);
+
+    json response;
+    response["type"] = "RoomCreatedEvent";
+    response["payload"] = {{"roomCode", code}};
+    state.socket->send(response.dump());
+    Logger::info("Room created: username=" + *state.username + " roomCode=" + code);
+}
+
+void GameWebSocketServer::handleJoinRoom(ConnectionState& state, const JoinRoomRequest& request) {
+    if (!state.username.has_value() || state.match != nullptr) return;
+
+    matchmaker_.dequeue(*state.username);
+    waitingByUsername_.erase(*state.username);
+
+    GameMatch* match = gameRegistry_.joinRoom(request.roomCode, *state.username);
+    if (match == nullptr) {
+        json response;
+        response["type"] = "JoinRoomFailedEvent";
+        state.socket->send(response.dump());
+        Logger::info("Join room failed: username=" + *state.username + " roomCode=" + request.roomCode);
+        return;
+    }
+    attachToMatch(state, match, /*isResume=*/false);
+}
+
+void GameWebSocketServer::handleFindMatch(ix::WebSocket* rawConnection, ConnectionState& state) {
+    if (!state.username.has_value() || state.match != nullptr) return;
+
+    int rating = accounts_.ratingFor(*state.username).value_or(1200);
+    matchmaker_.enqueue(*state.username, rating);
+    waitingByUsername_[*state.username] = rawConnection;
+    Logger::info("Enqueued for matchmaking: username=" + *state.username + " rating=" + std::to_string(rating));
 }
 
 void GameWebSocketServer::attachToMatch(ConnectionState& state, GameMatch* match, bool isResume) {
@@ -144,18 +217,27 @@ void GameWebSocketServer::handleClose(ix::WebSocket* rawConnection, ConnectionSt
 }
 
 void GameWebSocketServer::attachNewlyMatchedConnections() {
-    std::lock_guard<std::mutex> lock(connectionsMutex_);
-    for (auto it = waitingByUsername_.begin(); it != waitingByUsername_.end(); ) {
-        GameMatch* match = gameRegistry_.matchFor(it->first);
-        if (match != nullptr) {
-            auto connIt = connections_.find(it->second);
-            if (connIt != connections_.end()) {
-                attachToMatch(connIt->second, match, /*isResume=*/false);
+    std::vector<std::pair<std::shared_ptr<ConnectionState>, GameMatch*>> toAttach;
+    {
+        std::lock_guard<std::mutex> lock(connectionsMutex_);
+        for (auto it = waitingByUsername_.begin(); it != waitingByUsername_.end(); ) {
+            GameMatch* match = gameRegistry_.matchFor(it->first);
+            if (match != nullptr) {
+                auto connIt = connections_.find(it->second);
+                if (connIt != connections_.end()) {
+                    toAttach.emplace_back(connIt->second, match);
+                }
+                it = waitingByUsername_.erase(it);
+            } else {
+                ++it;
             }
-            it = waitingByUsername_.erase(it);
-        } else {
-            ++it;
         }
+    }
+
+    // attachToMatch sends the GameStartedEvent snapshot over the network, so it
+    // runs outside connectionsMutex_ like every other handler above.
+    for (auto& [statePtr, match] : toAttach) {
+        attachToMatch(*statePtr, match, /*isResume=*/false);
     }
 }
 

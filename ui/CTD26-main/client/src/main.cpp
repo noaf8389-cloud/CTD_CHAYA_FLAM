@@ -1,23 +1,17 @@
 // https://github.com/noaf8389-cloud/CTD_CHAYA_FLAM.git
 
 #include "game/controler.hpp"
+#include "game/room_dialog.hpp"
 #include <windows.h>
-#include <iostream>
 #include "logging/logger.hpp"
 
 int main() {
     SetProcessDPIAware();
     try {
-        std::string username;
-        std::cout << "Username: ";
-        std::cin >> username;
-
-        std::string password;
-        std::cout << "Password: ";
-        std::cin >> password;
+        LoginPrompt login = promptLogin();
 
         Logger::init("client.log");
-        Controler("../..", "pieces3", username, password).run();
+        Controler("../..", "pieces3", login.username, login.password, login.matchChoice).run();
         return 0;
     }
     catch (const std::exception& e) {

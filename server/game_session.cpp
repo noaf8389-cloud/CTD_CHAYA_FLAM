@@ -6,6 +6,20 @@
 #include "logic/real_time/real_time_arbiter.hpp"
 #include "logging/logger.hpp"
 
+namespace {
+    // Standard chess piece values; the king isn't scored (capturing it already ends the game).
+    int pieceValue(char pieceType) {
+        switch (pieceType) {
+            case 'P': return 1;
+            case 'N': return 3;
+            case 'B': return 3;
+            case 'R': return 5;
+            case 'Q': return 9;
+            default: return 0;
+        }
+    }
+}
+
 void GameSession::handleClick(int row, int col, char actingColor) {
     std::lock_guard lock(mutex_);
 
@@ -50,6 +64,12 @@ void GameSession::update(long long deltaMs) {
 
         if (result.captured) {
             bus_.publish(PieceCapturedEvent{result.to, result.survivingToken, result.capturedToken, now});
+
+            char capturerColor = result.survivingToken[0];
+            int gained = (result.capturedToken.size() == 2) ? pieceValue(result.capturedToken[1]) : 0;
+            int& score = (capturerColor == 'w') ? whiteScore_ : blackScore_;
+            score += gained;
+            bus_.publish(ScoreUpdatedEvent{capturerColor, score, now});
         }
 
         if (result.gameEnded) {

@@ -16,3 +16,15 @@ void CommandSender::sendLogin(const std::string& username, const std::string& pa
     json message{{"command", "login"}, {"username", username}, {"password", password}};
     connection_.send(message.dump());
 }
+
+void CommandSender::sendFindMatch() {
+    connection_.send(json{{"command", "findMatch"}}.dump());
+}
+
+void CommandSender::sendCreateRoom() {
+    connection_.send(json{{"command", "createRoom"}}.dump());
+}
+
+void CommandSender::sendJoinRoom(const std::string& roomCode) {
+    connection_.send(json{{"command", "joinRoom"}, {"roomCode", roomCode}}.dump());
+}
