@@ -1,17 +1,23 @@
 #pragma once
 
-#include <cstddef>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
+
+#include "lobby_store.hpp"
 
 class LobbyRegistry {
 public:
-    using ConnectionId = std::size_t;
+    using ConnectionId = LobbyStore::ConnectionId;
     using IdentifiedHandler = std::function<void(ConnectionId id, const std::string& username, int rating)>;
+
+    // Default: owns an in-process InMemoryLobbyStore (today's behavior, unchanged).
+    LobbyRegistry();
+    // Injected: delegates to an externally-owned store (e.g. a future RedisLobbyStore),
+    // shared across however many processes point at it.
+    explicit LobbyRegistry(LobbyStore& store);
 
     // Registers a brand-new, not-yet-identified WebSocket connection; returns its id.
     ConnectionId registerConnection();
@@ -37,11 +43,9 @@ public:
     void setOnIdentified(IdentifiedHandler handler);
 
 private:
-    struct Identity { std::string username; int rating; };
+    std::unique_ptr<LobbyStore> ownedStore_;
+    LobbyStore& store_;
 
-    mutable std::mutex mutex_;
-    std::unordered_set<ConnectionId> connections_;
-    std::unordered_map<ConnectionId, Identity> identities_;
-    ConnectionId nextId_ = 1;
+    std::mutex handlerMutex_;
     IdentifiedHandler onIdentified_;
 };

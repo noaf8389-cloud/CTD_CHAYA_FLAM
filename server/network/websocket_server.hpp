@@ -8,6 +8,7 @@
 
 #include <ixwebsocket/IXWebSocketServer.h>
 
+#include "../auth/auth_service.hpp"
 #include "../lobby/lobby_registry.hpp"
 #include "../lobby/matchmaker.hpp"
 #include "../matches/game_registry.hpp"
@@ -55,6 +56,7 @@ private:
     Matchmaker& matchmaker_;
     PlayerAccountStore& accounts_;
     Board templateBoard_;
+    AuthService authService_;
 
     std::mutex connectionsMutex_;
     std::unordered_map<ix::WebSocket*, std::shared_ptr<ConnectionState>> connections_;

@@ -1,5 +1,6 @@
 #include "../catch2/catch_amalgamated.hpp"
 #include "../../lobby/lobby_registry.hpp"
+#include "../../lobby/in_memory_lobby_store.hpp"
 
 TEST_CASE("registerConnection returns an id that is not yet identified") {
     LobbyRegistry lobby;
@@ -166,4 +167,16 @@ TEST_CASE("setOnIdentified does not fire when no handler was set") {
     LobbyRegistry lobby;
     auto id = lobby.registerConnection();
     REQUIRE_NOTHROW(lobby.identify(id, "noa", 1300));
+}
+
+TEST_CASE("LobbyRegistry constructed with an external LobbyStore delegates to it") {
+    InMemoryLobbyStore store;
+    LobbyRegistry lobby(store);
+
+    auto id = lobby.registerConnection();
+    lobby.identify(id, "noa", 1300);
+
+    REQUIRE(lobby.usernameFor(id).value() == "noa");
+    REQUIRE(store.identityFor(id).has_value());
+    REQUIRE(store.identityFor(id)->username == "noa");
 }

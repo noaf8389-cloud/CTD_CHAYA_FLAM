@@ -17,10 +17,12 @@ namespace {
 }
 
 GameWebSocketServer::GameWebSocketServer(int port, LobbyRegistry& lobbyRegistry, GameRegistry& gameRegistry,
-                                          Matchmaker& matchmaker, PlayerAccountStore& accounts, Board templateBoard)
+                                  Matchmaker& matchmaker, PlayerAccountStore& accounts, Board templateBoard)
     : lobbyRegistry_(lobbyRegistry), gameRegistry_(gameRegistry),
       matchmaker_(matchmaker), accounts_(accounts), templateBoard_(std::move(templateBoard)),
+      authService_(accounts, lobbyRegistry, gameRegistry),
       server_(port, "0.0.0.0") {
+
     matchmaker_.setOnNoMatchFound([this](const std::string& username) {
         ix::WebSocket* socket = nullptr;
         {
@@ -113,16 +115,12 @@ GameWebSocketServer::GameWebSocketServer(int port, LobbyRegistry& lobbyRegistry,
 }
 
 void GameWebSocketServer::handleLogin(ix::WebSocket* rawConnection, ConnectionState& state, const LoginRequest& request) {
-    LoginResult result = accounts_.loginOrRegister(request.username, request.password);
-    Logger::info("Login attempt: username=" + request.username + " success=" + (result.success ? "true" : "false"));
+    AuthResult result = authService_.login(state.lobbyId, request.username, request.password);
 
     if (result.success) {
-        lobbyRegistry_.identify(state.lobbyId, request.username, result.rating);
         state.username = request.username;
-
-        GameMatch* existingMatch = gameRegistry_.matchFor(request.username);
-        if (existingMatch != nullptr) {
-            attachToMatch(state, existingMatch, /*isResume=*/true);
+        if (result.existingMatch != nullptr) {
+            attachToMatch(state, result.existingMatch, /*isResume=*/true);
             Logger::info("Session resumed: username=" + request.username);
         }
     }
